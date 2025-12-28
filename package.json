@@ -1,0 +1,17 @@
+{
+  "name": "hue-lines",
+  "version": "1.0.0",
+  "description": "hue tracing strips",
+  "keywords": [
+    "hue"
+  ],
+  "license": "ISC",
+  "author": "Larry Harmon",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"},
+  "dependencies": {
+    "axios": "^1.13.2"
+  }
+}
