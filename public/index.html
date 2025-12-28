@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hue Lines — Lights</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>Hue Lines</h1>
+    <p class="subtitle">Rooms with lights — play/stop controls per light</p>
+  </header>
+
+  <main>
+    <div id="rooms" class="rooms-container" aria-live="polite"></div>
+  </main>
+
+  <footer class="site-footer">Lights will be loaded from the Hue API later.</footer>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" src="app.js"></script>
+</body>
+</html>

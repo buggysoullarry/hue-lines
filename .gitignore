@@ -8,6 +8,10 @@ yarn.lock
 # Environment variables
 .env
 .env.local
+config.json
+
+# Config files
+config.json
 .env.*.local
 
 # IDE
