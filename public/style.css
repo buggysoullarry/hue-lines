@@ -22,4 +22,12 @@ main{flex:1;padding:18px}
 .playing{animation:glow 1.6s ease-in-out infinite}
 @keyframes glow{0%{box-shadow:0 0 0px rgba(255,255,255,0)}50%{box-shadow:0 0 18px rgba(255,255,255,0.08)}100%{box-shadow:0 0 0px rgba(255,255,255,0)}}
 .site-footer{padding:12px 18px;text-align:center;color:#9fb0cc;font-size:0.85rem}
+.brightness-slider{margin-top:8px;display:flex;align-items:center;gap:8px}
+.brightness-slider input[type="range"]{flex:1;cursor:pointer}
+.brightness-slider span{font-size:0.8em;color:#9fb0cc}
+.color-picker{margin-top:8px;text-align:center}
+.color-picker input[type="color"]{width:50px;height:30px;border:none;cursor:pointer}
+.multi-color-picker{margin-top:8px;display:flex;gap:8px;justify-content:center}
+.multi-color-picker .color-dot{width:30px;height:30px;border:none;border-radius:50%;cursor:pointer}
+.iro-picker{margin:10px auto;text-align:center}
 @media (max-width:420px){.lights-grid{grid-template-columns:repeat(2,1fr)}}
