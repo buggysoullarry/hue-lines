@@ -24,8 +24,8 @@ main{flex:1;padding:18px}
 .rooms-container{display:flex;flex-direction:column;gap:24px}
 .room{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.06));border:1px solid rgba(255,255,255,0.04);padding:16px;border-radius:12px}
 .room h2{margin:0 0 12px;color:#e6eef8;font-size:1.2rem}
-.lights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.06));border:1px solid rgba(255,255,255,0.04);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.lights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.06));border:1px solid rgba(255,255,255,0.04);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:240px}
 .card .row{display:flex;align-items:center;justify-content:space-between}
 .light-name{font-weight:600}
 .light-name-input{background:transparent;border:1px solid rgba(255,255,255,0.2);color:inherit;padding:4px 6px;border-radius:4px;font-size:inherit;width:100%;max-width:120px}
