@@ -96,7 +96,16 @@ function LightCard({ light }) {
   const updatingPicker = React.useRef(false);
   const gradientTimeoutRef = React.useRef(null);
   const [chaseRunning, setChaseRunning] = useState(false);
-  const [chaseSpeed, setChaseSpeed] = useState(5000);
+  // Persist chase speed per light in localStorage
+  const chaseSpeedKey = `hue-chase-speed-${light.uuid || light.id}`;
+  const [chaseSpeed, setChaseSpeed] = useState(() => {
+    const saved = localStorage.getItem(chaseSpeedKey);
+    return saved ? parseInt(saved) : 1000;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(chaseSpeedKey, chaseSpeed);
+  }, [chaseSpeed, chaseSpeedKey]);
 
   useEffect(() => {
     setOnOffText(light.on ? 'On' : 'Off');
@@ -321,7 +330,17 @@ function LightCard({ light }) {
             {editName}
           </div>
         )}
-        <div className="swatch" style={{ background: light.color || '#999' }}></div>
+        <label className="swatch" style={{ background: light.color || '#999', cursor: !light.isStrip ? 'pointer' : 'default', position: 'relative', display: 'inline-block' }} title={!light.isStrip ? 'Set color' : ''}>
+          {!light.isStrip && (
+            <input
+              type="color"
+              value={color}
+              onChange={handleColorChange}
+              style={{ opacity: 0, width: '100%', height: '100%', position: 'absolute', left: 0, top: 0, cursor: 'pointer', zIndex: 2 }}
+              tabIndex={-1}
+            />
+          )}
+        </label>
       </div>
       <div className="row">
         <button className="btn on-off" onClick={toggleOnOff} title={onOffText}>
@@ -355,7 +374,7 @@ function LightCard({ light }) {
             <input
               type="range"
               min="100"
-              max="10000"
+              max="1000"
               value={chaseSpeed}
               onChange={handleChaseSpeedChange}
               title={`Speed: ${chaseSpeed}ms`}
@@ -367,14 +386,20 @@ function LightCard({ light }) {
       {light.isStrip && (
         <div ref={pickerRef} className="iro-picker"></div>
       )}
+      {/* Color picker for non-strips is now integrated into the swatch above */}
     </div>
   );
 }
 
-function Room({ room }) {
+function Room({ room, dragHandleProps }) {
   return (
     <div className="room">
-      <h2>{room.name}</h2>
+      <div className="room-header">
+        <span className="drag-handle" {...dragHandleProps} title="Drag to reorder" aria-label="Drag to reorder" tabIndex={0}>
+          <i className="fas fa-bars" aria-hidden="true"></i>
+        </span>
+        <h2 style={{ display: 'inline-block', margin: 0 }}>{room.name}</h2>
+      </div>
       <div className="lights-grid">
         {room.lights.map(light => <LightCard key={light.id} light={light} />)}
       </div>
@@ -384,9 +409,23 @@ function Room({ room }) {
 
 function App() {
   const [rooms, setRooms] = useState([]);
+  const roomOrderKey = 'hue-room-order';
 
+  // Load rooms and apply saved order
   const loadRooms = async () => {
     const data = await fetchRooms();
+    const savedOrder = JSON.parse(localStorage.getItem(roomOrderKey) || '[]');
+    if (savedOrder.length) {
+      // Sort rooms by saved order, fallback to end
+      data.sort((a, b) => {
+        const ai = savedOrder.indexOf(a.id);
+        const bi = savedOrder.indexOf(b.id);
+        if (ai === -1 && bi === -1) return 0;
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+    }
     setRooms(data);
   };
 
@@ -396,9 +435,78 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Drag and drop handlers with visual feedback
+  const [draggedIdx, setDraggedIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+
+  const onDragStart = (e, idx) => {
+    setDraggedIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('room-idx', idx);
+    // For accessibility
+    e.currentTarget.classList.add('room-draggable');
+  };
+  const onDragOver = (e, idx) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+    e.dataTransfer.dropEffect = 'move';
+  };
+  const onDragLeave = (e, idx) => {
+    setDragOverIdx(null);
+  };
+  const onDrop = (e, idx) => {
+    const fromIdx = parseInt(e.dataTransfer.getData('room-idx'));
+    if (fromIdx === idx) {
+      setDraggedIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const newRooms = [...rooms];
+    const [moved] = newRooms.splice(fromIdx, 1);
+    newRooms.splice(idx, 0, moved);
+    setRooms(newRooms);
+    localStorage.setItem(roomOrderKey, JSON.stringify(newRooms.map(r => r.id)));
+    setDraggedIdx(null);
+    setDragOverIdx(null);
+  };
+  const onDragEnd = () => {
+    setDraggedIdx(null);
+    setDragOverIdx(null);
+  };
+
   return (
     <div className="rooms-container" aria-live="polite">
-      {rooms.length === 0 ? 'No rooms found.' : rooms.map(room => <Room key={room.id} room={room} />)}
+      {rooms.length === 0 ? 'No rooms found.' : rooms.map((room, idx) => {
+        const isDragged = draggedIdx === idx;
+        const isDragOver = dragOverIdx === idx && draggedIdx !== null && draggedIdx !== idx;
+        return (
+          <div
+            key={room.id}
+            className={`room-draggable${isDragOver ? ' drag-over' : ''}`}
+            draggable
+            onDragStart={e => onDragStart(e, idx)}
+            onDragOver={e => onDragOver(e, idx)}
+            onDragLeave={e => onDragLeave(e, idx)}
+            onDrop={e => onDrop(e, idx)}
+            onDragEnd={onDragEnd}
+            aria-grabbed={isDragged}
+            aria-dropeffect="move"
+          >
+            <Room room={room} dragHandleProps={{
+              onMouseDown: e => {
+                // Forward drag to parent div
+                const parent = e.currentTarget.closest('.room-draggable');
+                if (parent) parent.draggable = true;
+              },
+              onTouchStart: e => {
+                const parent = e.currentTarget.closest('.room-draggable');
+                if (parent) parent.draggable = true;
+              },
+              style: { cursor: 'grab' }
+            }} />
+          </div>
+        );
+      })}
     </div>
   );
 }
