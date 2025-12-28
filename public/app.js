@@ -95,6 +95,8 @@ function LightCard({ light }) {
   const [picker, setPicker] = useState(null);
   const updatingPicker = React.useRef(false);
   const gradientTimeoutRef = React.useRef(null);
+  const [chaseRunning, setChaseRunning] = useState(false);
+  const [chaseSpeed, setChaseSpeed] = useState(5000);
 
   useEffect(() => {
     setOnOffText(light.on ? 'On' : 'Off');
@@ -249,6 +251,49 @@ function LightCard({ light }) {
     }, 300); // 300ms delay
   };
 
+  const handleChaseToggle = async () => {
+    const lightId = light.uuid || light.id;
+    if (chaseRunning) {
+      try {
+        const resp = await fetch(`/api/lights/${lightId}/chase/stop`, { method: 'PUT' });
+        if (!resp.ok) throw new Error('Failed to stop chase');
+        setChaseRunning(false);
+      } catch (err) {
+        console.error('Error stopping chase:', err);
+      }
+    } else {
+      try {
+        const resp = await fetch(`/api/lights/${lightId}/chase/start`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speed: chaseSpeed })
+        });
+        if (!resp.ok) throw new Error('Failed to start chase');
+        setChaseRunning(true);
+      } catch (err) {
+        console.error('Error starting chase:', err);
+      }
+    }
+  };
+
+  const handleChaseSpeedChange = async (e) => {
+    const newSpeed = parseInt(e.target.value);
+    setChaseSpeed(newSpeed);
+    if (chaseRunning) {
+      const lightId = light.uuid || light.id;
+      try {
+        const resp = await fetch(`/api/lights/${lightId}/chase/speed`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speed: newSpeed })
+        });
+        if (!resp.ok) throw new Error('Failed to update speed');
+      } catch (err) {
+        console.error('Error updating chase speed:', err);
+      }
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       handleNameSubmit();
@@ -300,6 +345,25 @@ function LightCard({ light }) {
         />
         <span>100%</span>
       </div>
+      {light.isOmniGlow && (
+        <div className="animation-controls">
+          <button className="btn animation" onClick={handleChaseToggle} title={chaseRunning ? 'Stop Chase' : 'Start Chase'}>
+            <i className={`fas ${chaseRunning ? 'fa-stop' : 'fa-play'}`}></i> Chase
+          </button>
+          <div className="speed-slider">
+            <span>Fast</span>
+            <input
+              type="range"
+              min="100"
+              max="10000"
+              value={chaseSpeed}
+              onChange={handleChaseSpeedChange}
+              title={`Speed: ${chaseSpeed}ms`}
+            />
+            <span>Slow</span>
+          </div>
+        </div>
+      )}
       {light.isStrip && (
         <div ref={pickerRef} className="iro-picker"></div>
       )}

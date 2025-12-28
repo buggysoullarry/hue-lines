@@ -29,5 +29,8 @@ main{flex:1;padding:18px}
 .color-picker input[type="color"]{width:50px;height:30px;border:none;cursor:pointer}
 .multi-color-picker{margin-top:8px;display:flex;gap:8px;justify-content:center}
 .multi-color-picker .color-dot{width:30px;height:30px;border:none;border-radius:50%;cursor:pointer}
-.iro-picker{margin:10px auto;text-align:center}
-@media (max-width:420px){.lights-grid{grid-template-columns:repeat(2,1fr)}}
+.iro-picker{margin:10px auto;text-align:center}.animation-controls{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.animation-controls .btn{border-color:#f59e0b}
+.speed-slider{display:flex;align-items:center;gap:8px}
+.speed-slider input[type="range"]{flex:1;cursor:pointer}
+.speed-slider span{font-size:0.8em;color:#9fb0cc}@media (max-width:420px){.lights-grid{grid-template-columns:repeat(2,1fr)}}

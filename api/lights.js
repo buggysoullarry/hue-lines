@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { startPlay, stopPlay, setLightOn, setLightOff, setLightName, setLightBrightness, setLightColor, setLightGradient } = require('../lib/hue');
+const { startChase, stopChase, updateChaseSpeed } = require('../lib/animations/omniglowChase');
 
 // PUT /api/lights/:id/play — Start play for a light
 router.put('/:id/play', async (req, res) => {
@@ -96,6 +97,45 @@ router.put('/:id/gradient', async (req, res) => {
     res.json({ success: true, message: `Set gradient for light ${id}` });
   } catch (error) {
     res.status(500).json({ error: `Failed to set gradient for light ${id}: ${error.message}` });
+  }
+});
+
+// PUT /api/lights/:id/chase/start — Start chase animation
+router.put('/:id/chase/start', async (req, res) => {
+  const { id } = req.params;
+  const { speed } = req.body;
+  const speedNum = parseInt(speed) || 5000;
+  if (speedNum < 100 || speedNum > 30000) return res.status(400).json({ error: 'Speed must be between 100-30000ms' });
+  try {
+    await startChase(id, speedNum);
+    res.json({ success: true, message: `Started chase for light ${id}` });
+  } catch (error) {
+    res.status(500).json({ error: `Failed to start chase for light ${id}: ${error.message}` });
+  }
+});
+
+// PUT /api/lights/:id/chase/stop — Stop chase animation
+router.put('/:id/chase/stop', async (req, res) => {
+  const { id } = req.params;
+  try {
+    stopChase(id);
+    res.json({ success: true, message: `Stopped chase for light ${id}` });
+  } catch (error) {
+    res.status(500).json({ error: `Failed to stop chase for light ${id}: ${error.message}` });
+  }
+});
+
+// PUT /api/lights/:id/chase/speed — Update chase speed
+router.put('/:id/chase/speed', async (req, res) => {
+  const { id } = req.params;
+  const { speed } = req.body;
+  const speedNum = parseInt(speed);
+  if (isNaN(speedNum) || speedNum < 100 || speedNum > 30000) return res.status(400).json({ error: 'Speed must be between 100-30000ms' });
+  try {
+    updateChaseSpeed(id, speedNum);
+    res.json({ success: true, message: `Updated chase speed for light ${id} to ${speedNum}ms` });
+  } catch (error) {
+    res.status(500).json({ error: `Failed to update chase speed for light ${id}: ${error.message}` });
   }
 });
 
