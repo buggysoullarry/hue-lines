@@ -1,7 +1,7 @@
 // api/lights.js — API routes for individual light controls
 const express = require('express');
 const router = express.Router();
-const { startPlay, stopPlay, setLightOn, setLightOff } = require('../lib/hue');
+const { startPlay, stopPlay, setLightOn, setLightOff, setLightName } = require('../lib/hue');
 
 // PUT /api/lights/:id/play — Start play for a light
 router.put('/:id/play', async (req, res) => {
@@ -44,6 +44,19 @@ router.put('/:id/off', async (req, res) => {
     res.json({ success: true, message: `Turned off light ${id}` });
   } catch (error) {
     res.status(500).json({ error: `Failed to turn off light ${id}: ${error.message}` });
+  }
+});
+
+// PUT /api/lights/:id/name — Rename a light
+router.put('/:id/name', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  try {
+    await setLightName(id, name);
+    res.json({ success: true, message: `Renamed light ${id} to ${name}` });
+  } catch (error) {
+    res.status(500).json({ error: `Failed to rename light ${id}: ${error.message}` });
   }
 });
 

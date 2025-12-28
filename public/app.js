@@ -36,10 +36,13 @@ async function fetchRooms() {
 function LightCard({ light }) {
   const [onOffText, setOnOffText] = useState(light.on ? 'On' : 'Off');
   const [playText, setPlayText] = useState('Play');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(light.name || `Light ${light.id}`);
 
   useEffect(() => {
     setOnOffText(light.on ? 'On' : 'Off');
-  }, [light.on]);
+    setEditName(light.name || `Light ${light.id}`);
+  }, [light.on, light.name]);
 
   const toggleOnOff = async () => {
     const newState = onOffText === 'On' ? 'Off' : 'On';
@@ -68,16 +71,68 @@ function LightCard({ light }) {
     }
   };
 
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleNameChange = (e) => {
+    setEditName(e.target.value);
+  };
+
+  const handleNameSubmit = async () => {
+    try {
+      const resp = await fetch(`/api/lights/${light.id}/name`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName })
+      });
+      if (!resp.ok) throw new Error('Failed to rename');
+      console.log(`Renamed light ${light.id} to ${editName}`);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error renaming:', err);
+      setEditName(light.name || `Light ${light.id}`); // Revert
+      setIsEditing(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleNameSubmit();
+    } else if (e.key === 'Escape') {
+      setEditName(light.name || `Light ${light.id}`);
+      setIsEditing(false);
+    }
+  };
+
   return (
     <div className="card">
       <div className="row">
-        <div className="light-name">{light.name || `Light ${light.id}`}</div>
+        {isEditing ? (
+          <input
+            type="text"
+            value={editName}
+            onChange={handleNameChange}
+            onBlur={handleNameSubmit}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            className="light-name-input"
+          />
+        ) : (
+          <div className="light-name" onDoubleClick={handleDoubleClick}>
+            {editName}
+          </div>
+        )}
         <div className="swatch" style={{ background: light.color || '#999' }}></div>
       </div>
       <div className="row">
-        <button className="btn on-off" onClick={toggleOnOff}>{onOffText}</button>
+        <button className="btn on-off" onClick={toggleOnOff} title={onOffText}>
+          <i className={`fas ${onOffText === 'On' ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
+        </button>
         <div className="controls">
-          <button className="btn play-stop" onClick={togglePlay}>{playText}</button>
+          <button className="btn play-stop" onClick={togglePlay} title={playText}>
+            <i className={`fas ${playText === 'Play' ? 'fa-play' : 'fa-pause'}`}></i>
+          </button>
         </div>
       </div>
     </div>
