@@ -1,6 +1,8 @@
 // server.js — Express server with API routes and static serving
 const express = require('express');
 const path = require('path');
+const { cookieParser, authMiddleware } = require('./lib/auth');
+const authRouter = require('./api/auth');
 const roomsRouter = require('./api/rooms');
 const lightsRouter = require('./api/lights');
 const bridgeRouter = require('./api/bridge');
@@ -10,8 +12,25 @@ const chaseGroupsRouter = require('./api/chaseGroups');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for rate limiting by real IP
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(express.json());
+app.use(cookieParser());
+
+// Auth routes (before auth middleware)
+app.use('/api/auth', authRouter);
+
+// Login page (before auth middleware)
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Auth middleware — everything below requires authentication
+app.use(authMiddleware);
+
+// Static files (protected)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check
