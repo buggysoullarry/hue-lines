@@ -1,7 +1,7 @@
 {
   "name": "hue-lines",
   "version": "1.0.0",
-  "description": "hue tracing strips",
+  "description": "Hue Lines — Chase animation controller for Philips Hue lights",
   "keywords": [
     "hue"
   ],
