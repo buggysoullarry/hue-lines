@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Hue Lines — Lights</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#0b1117">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chisel:wght@400&display=swap" rel="stylesheet">
@@ -12,24 +18,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="site-header">
-    <h1>Hue Lines</h1>
-    <p class="subtitle">Rooms with lights — play/stop controls per light</p>
-  </header>
-
   <main>
-    <div id="rooms" class="rooms-container" aria-live="polite"></div>
+    <div id="rooms" aria-live="polite"></div>
   </main>
 
-  <footer class="site-footer">Lights will be loaded from the Hue API later.</footer>
+  <footer class="site-footer">Hue Lines &middot; Light Control</footer>
 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5/dist/iro.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="text/babel" src="components/helpers.js"></script>
+  <script type="text/babel" src="components/LogPanel.js"></script>
+  <script type="text/babel" src="components/BridgeBanner.js"></script>
   <script type="text/babel" src="components/LightCard.js"></script>
+  <script type="text/babel" src="components/LightGroup.js"></script>
   <script type="text/babel" src="components/Room.js"></script>
+  <script type="text/babel" src="components/ChaseGroupCard.js"></script>
+  <script type="text/babel" src="components/ChaseGroupsTab.js"></script>
   <script type="text/babel" src="components/App.js"></script>
   <script type="text/babel" src="app.js"></script>
 </body>

@@ -2,34 +2,20 @@
 const express = require('express');
 const router = express.Router();
 const { getRooms, startPlay, stopPlay } = require('../lib/hue');
+const log = require('../lib/logger');
 
 // GET /api/rooms — Get all rooms with their lights
 router.get('/', async (req, res) => {
-  console.log('GET /api/rooms called');
   try {
     const rooms = await getRooms();
     res.json(rooms);
   } catch (error) {
-    // Fallback to sample data if Hue API fails
-    const sampleRooms = [
-      {
-        id: '1',
-        name: 'Living Room',
-        lights: [
-          { id: '1', name: 'Ceiling Light', on: true, color: '#ffd166' },
-          { id: '2', name: 'Lamp', on: false, color: '#06d6a0' }
-        ]
-      },
-      {
-        id: '2',
-        name: 'Bedroom',
-        lights: [
-          { id: '3', name: 'Bedside Lamp', on: true, color: '#118ab2' }
-        ]
-      }
-    ];
-    console.warn('Using sample rooms due to Hue API error:', error.message);
-    res.json(sampleRooms);
+    log.error(`Failed to fetch rooms: ${error.message}`);
+    res.status(502).json({
+      error: 'Failed to reach Hue bridge',
+      message: error.message,
+      bridgeIp: error.config?.url || 'unknown'
+    });
   }
 });
 

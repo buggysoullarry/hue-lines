@@ -1,31 +1,11 @@
-// helpers.js — shared utilities and sample data
+// helpers.js — shared utilities
 
-// Helper: Validate hex color format
 function validateColor(color) {
   if (!color || typeof color !== 'string') return '#ffffff';
   if (!color.match(/^#[0-9A-Fa-f]{6}$/)) return '#ffffff';
-  // Check for NaN in the string
   if (color.toLowerCase().includes('nan')) return '#ffffff';
   return color;
 }
-
-const sampleRooms = [
-  {
-    id: '1',
-    name: 'Living Room',
-    lights: [
-      { id: '1', name: 'Ceiling Light', on: true, color: '#ffd166' },
-      { id: '2', name: 'Lamp', on: false, color: '#06d6a0' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Bedroom',
-    lights: [
-      { id: '3', name: 'Bedside Lamp', on: true, color: '#118ab2' }
-    ]
-  }
-];
 
 // Helper: Convert HSL to hex
 function hslToHex(h, s, l) {
@@ -94,12 +74,15 @@ function createGradientColors(baseColor, num) {
 async function fetchRooms() {
   try {
     const resp = await fetch('/api/rooms');
-    if (!resp.ok) throw new Error('Network response was not ok');
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      const msg = errBody.message || `HTTP ${resp.status}`;
+      return { rooms: [], error: { message: msg, status: resp.status } };
+    }
     const data = await resp.json();
-    if (Array.isArray(data) && data.length) return data;
+    if (Array.isArray(data) && data.length) return { rooms: data, error: null };
+    return { rooms: [], error: null };
   } catch (err) {
-    console.warn('Could not fetch /api/rooms — using sample data', err);
+    return { rooms: [], error: { message: err.message, status: 0 } };
   }
-  await new Promise((r) => setTimeout(r, 120));
-  return sampleRooms;
 }

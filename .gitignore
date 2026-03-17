@@ -2,17 +2,18 @@
 node_modules/
 npm-debug.log
 yarn-error.log
-package-lock.json
 yarn.lock
 
-# Environment variables
+# Environment & credentials
 .env
 .env.local
+.env.*.local
 config.json
 
-# Config files
-config.json
-.env.*.local
+# User data (created at runtime)
+groups.json
+sequences.json
+chaseGroups.json
 
 # IDE
 .vscode/
