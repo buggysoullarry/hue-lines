@@ -5,11 +5,11 @@ const playback = require('../lib/audio/playback');
 
 // PUT /api/playback/play — Start playing a playlist
 router.put('/play', async (req, res) => {
-  const { playlistId, trackIndex } = req.body;
+  const { playlistId, trackIndex, shuffle } = req.body;
   if (!playlistId) return res.status(400).json({ error: 'playlistId is required' });
 
   try {
-    await playback.play(playlistId, trackIndex || 0);
+    await playback.play(playlistId, { trackIndex: trackIndex || 0, shuffle: !!shuffle });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

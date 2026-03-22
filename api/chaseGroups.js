@@ -321,7 +321,7 @@ router.put('/:id/play', async (req, res) => {
   // Start linked playlist if one is set
   if (cg.playlistId) {
     try {
-      playback.play(cg.playlistId);
+      playback.play(cg.playlistId, { shuffle: true });
       log.info(`Started playlist ${cg.playlistId} for chase group ${cg.name}`);
     } catch (err) {
       errors.push(`playlist: ${err.message}`);
