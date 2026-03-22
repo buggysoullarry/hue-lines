@@ -269,13 +269,14 @@ router.put('/:id', (req, res) => {
   const idx = cgs.findIndex(g => g.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Chase group not found' });
 
-  const { name, members, bgColor, headColor, speed, playlistId } = req.body;
+  const { name, members, bgColor, headColor, speed, playlistId, buttonId } = req.body;
   if (name !== undefined) cgs[idx].name = name;
   if (members !== undefined) cgs[idx].members = members;
   if (bgColor !== undefined) cgs[idx].bgColor = bgColor;
   if (headColor !== undefined) cgs[idx].headColor = headColor;
   if (speed !== undefined) cgs[idx].speed = speed;
   if (playlistId !== undefined) cgs[idx].playlistId = playlistId || null;
+  if (buttonId !== undefined) cgs[idx].buttonId = buttonId || null;
 
   writeChaseGroups(cgs);
   res.json(cgs[idx]);

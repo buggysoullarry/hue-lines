@@ -1,7 +1,7 @@
 // ChaseGroupCard.js — expandable chase group with play/stop, colors, speed, playlist
 const { useState, useEffect } = React;
 
-function ChaseGroupCard({ group, playlists, onDelete, onUpdate }) {
+function ChaseGroupCard({ group, playlists, buttonDevices, onDelete, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [running, setRunning] = useState(group.running || false);
   const [speed, setSpeed] = useState(group.speed || 1000);
@@ -71,6 +71,11 @@ function ChaseGroupCard({ group, playlists, onDelete, onUpdate }) {
     onUpdate(group.id, { playlistId: val });
   };
 
+  const handleButtonChange = (e) => {
+    const val = e.target.value || null;
+    onUpdate(group.id, { buttonId: val });
+  };
+
   const saveName = () => {
     setEditing(false);
     if (editName !== group.name) onUpdate(group.id, { name: editName });
@@ -82,6 +87,17 @@ function ChaseGroupCard({ group, playlists, onDelete, onUpdate }) {
   };
 
   const linkedPlaylist = (playlists || []).find(p => p.id === group.playlistId);
+
+  // Build flat list of all buttons across devices for the dropdown
+  const allButtons = [];
+  (buttonDevices || []).forEach(dev => {
+    (dev.buttons || []).forEach(btn => {
+      allButtons.push({
+        id: btn.id,
+        label: `${dev.name} — Button ${btn.controlId}`,
+      });
+    });
+  });
 
   return (
     <div className={`cg-card${running ? ' cg-running' : ''}`}>
@@ -164,6 +180,24 @@ function ChaseGroupCard({ group, playlists, onDelete, onUpdate }) {
                 <option key={pl.id} value={pl.id}>
                   {pl.name} ({pl.trackIds.length} tracks)
                 </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tap button picker */}
+          <div className="cg-control-row">
+            <span className="cg-section-label">
+              <i className="fas fa-hand-pointer" style={{ marginRight: 4 }}></i> Tap Button
+            </span>
+            <select
+              className="cg-playlist-select"
+              value={group.buttonId || ''}
+              onChange={handleButtonChange}
+              onClick={e => e.stopPropagation()}
+            >
+              <option value="">None</option>
+              {allButtons.map(btn => (
+                <option key={btn.id} value={btn.id}>{btn.label}</option>
               ))}
             </select>
           </div>

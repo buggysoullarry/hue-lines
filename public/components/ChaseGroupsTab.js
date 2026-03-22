@@ -1,7 +1,7 @@
 // ChaseGroupsTab.js — Tab showing all chase groups with create functionality
 const { useState, useEffect } = React;
 
-function ChaseGroupsTab({ chaseGroups, sequences, rooms, playlists, onRefresh }) {
+function ChaseGroupsTab({ chaseGroups, sequences, rooms, playlists, buttonDevices, onRefresh }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]); // [{ type, id, name }]
@@ -192,6 +192,7 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, playlists, onRefresh })
               key={cg.id}
               group={cg}
               playlists={playlists}
+              buttonDevices={buttonDevices}
               onDelete={handleDelete}
               onUpdate={handleUpdate}
             />

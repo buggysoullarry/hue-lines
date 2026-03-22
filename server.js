@@ -10,6 +10,8 @@ const sequencesRouter = require('./api/sequences');
 const chaseGroupsRouter = require('./api/chaseGroups');
 const musicRouter = require('./api/music');
 const playbackRouter = require('./api/playback');
+const buttonsRouter = require('./api/buttons');
+const { connect: connectEventStream } = require('./lib/hueEventStream');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +94,7 @@ app.use('/api/groups', sequencesRouter); // backwards compat
 app.use('/api/chase-groups', chaseGroupsRouter);
 app.use('/api/music', musicRouter);
 app.use('/api/playback', playbackRouter);
+app.use('/api/buttons', buttonsRouter);
 
 // Fallback for SPA (serve index.html for non-API routes)
 app.use((req, res) => {
@@ -102,4 +105,43 @@ const log = require('./lib/logger');
 
 app.listen(PORT, () => {
   log.info(`Server running at http://localhost:${PORT}/`);
+
+  // Connect to Hue Bridge EventStream for button press handling
+  const { isGroupChaseRunning } = require('./lib/animations/groupChase');
+  const { isStripChaseRunning } = require('./lib/animations/omniglowChase');
+
+  connectEventStream((buttonEvent) => {
+    // Find which chase group has this button assigned
+    const cgFs = require('fs');
+    const cgPath = require('path').join(__dirname, 'chaseGroups.json');
+    let cgs = [];
+    try { cgs = JSON.parse(cgFs.readFileSync(cgPath, 'utf8')); } catch {}
+
+    const cg = cgs.find(g => g.buttonId === buttonEvent.buttonId);
+    if (!cg) return;
+
+    const isRunning = cg.members.some(m => {
+      if (m.type === 'sequence') return isGroupChaseRunning(m.id);
+      if (m.type === 'strip') return isStripChaseRunning(m.id);
+      return false;
+    });
+
+    const endpoint = isRunning ? 'stop' : 'play';
+    log.info(`Tap button pressed → ${endpoint} chase group "${cg.name}"`);
+
+    // Use internal HTTP to trigger play/stop (reuses all existing logic including music)
+    const http = require('http');
+    const reqOpts = {
+      hostname: '127.0.0.1',
+      port: PORT,
+      path: `/api/chase-groups/${cg.id}/${endpoint}`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    };
+    const r = http.request(reqOpts);
+    if (endpoint === 'play') {
+      r.write(JSON.stringify({ speed: cg.speed, bgColor: cg.bgColor, headColor: cg.headColor }));
+    }
+    r.end();
+  });
 });
