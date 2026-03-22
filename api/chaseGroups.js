@@ -9,6 +9,7 @@ const { startGroupChase, stopGroupChase, updateGroupChaseSpeed, isGroupChaseRunn
 const { startChase, stopChase, updateChaseSpeed, updateChaseColors, isStripChaseRunning } = require('../lib/animations/omniglowChase');
 const { getLightV2, setLightColor } = require('../lib/hue');
 const log = require('../lib/logger');
+const playback = require('../lib/audio/playback');
 
 const cgPath = path.join(__dirname, '..', 'chaseGroups.json');
 const seqPath = path.join(__dirname, '..', 'sequences.json');
@@ -149,6 +150,8 @@ router.put('/stop-all', async (req, res) => {
     }
     await restoreLightStates(cg.id);
   }
+  // Stop any music playback
+  playback.stop();
   res.json({ success: true });
 });
 
@@ -255,12 +258,13 @@ router.put('/:id', (req, res) => {
   const idx = cgs.findIndex(g => g.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Chase group not found' });
 
-  const { name, members, bgColor, headColor, speed } = req.body;
+  const { name, members, bgColor, headColor, speed, playlistId } = req.body;
   if (name !== undefined) cgs[idx].name = name;
   if (members !== undefined) cgs[idx].members = members;
   if (bgColor !== undefined) cgs[idx].bgColor = bgColor;
   if (headColor !== undefined) cgs[idx].headColor = headColor;
   if (speed !== undefined) cgs[idx].speed = speed;
+  if (playlistId !== undefined) cgs[idx].playlistId = playlistId || null;
 
   writeChaseGroups(cgs);
   res.json(cgs[idx]);
@@ -314,6 +318,16 @@ router.put('/:id/play', async (req, res) => {
     }
   }
 
+  // Start linked playlist if one is set
+  if (cg.playlistId) {
+    try {
+      playback.play(cg.playlistId);
+      log.info(`Started playlist ${cg.playlistId} for chase group ${cg.name}`);
+    } catch (err) {
+      errors.push(`playlist: ${err.message}`);
+    }
+  }
+
   if (errors.length) {
     res.json({ success: true, warnings: errors });
   } else {
@@ -334,6 +348,11 @@ router.put('/:id/stop', async (req, res) => {
       stopChase(member.id);
     }
     activeMembership.delete(member.id);
+  }
+
+  // Stop music if this chase group had a playlist
+  if (cg.playlistId) {
+    playback.stop();
   }
 
   await restoreLightStates(cg.id);

@@ -1,4 +1,4 @@
-// MusicTab.js — Music library, playlists, and playback controls
+// MusicTab.js — Music library, folder-based playlists, and playback controls
 const { useState, useEffect, useRef } = React;
 
 function MusicTab() {
@@ -6,10 +6,7 @@ function MusicTab() {
   const [playlists, setPlaylists] = useState([]);
   const [playback, setPlayback] = useState(null);
   const [scanning, setScanning] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [selectedTracks, setSelectedTracks] = useState([]);
-  const [search, setSearch] = useState('');
+  const [expandedPlaylist, setExpandedPlaylist] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
   const pollRef = useRef(null);
 
@@ -41,7 +38,6 @@ function MusicTab() {
     loadLibrary();
     loadPlaylists();
     loadPlayback();
-    // Poll playback status while playing
     pollRef.current = setInterval(loadPlayback, 5000);
     return () => clearInterval(pollRef.current);
   }, []);
@@ -51,31 +47,9 @@ function MusicTab() {
     try {
       await fetch('/api/music/library/rescan', { method: 'POST' });
       await loadLibrary();
+      await loadPlaylists();
     } catch (err) { console.error('Rescan failed:', err); }
     setScanning(false);
-  };
-
-  // Playlist CRUD
-  const createPlaylist = async () => {
-    if (!newPlaylistName.trim() || selectedTracks.length === 0) return;
-    try {
-      await fetch('/api/music/playlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newPlaylistName.trim(), trackIds: selectedTracks })
-      });
-      setCreating(false);
-      setNewPlaylistName('');
-      setSelectedTracks([]);
-      loadPlaylists();
-    } catch (err) { console.error('Failed to create playlist:', err); }
-  };
-
-  const deletePlaylist = async (id) => {
-    try {
-      await fetch(`/api/music/playlists/${id}`, { method: 'DELETE' });
-      loadPlaylists();
-    } catch (err) { console.error('Failed to delete playlist:', err); }
   };
 
   // Playback controls
@@ -87,16 +61,13 @@ function MusicTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playlistId })
       });
-      // Poll until playback actually starts (HomePod connection takes a few seconds)
+      // Poll until playback starts
       for (let i = 0; i < 20; i++) {
         await new Promise(r => setTimeout(r, 1000));
         const resp = await fetch('/api/playback/status');
         if (resp.ok) {
           const status = await resp.json();
-          if (status.playing) {
-            setPlayback(status);
-            break;
-          }
+          if (status.playing) { setPlayback(status); break; }
         }
       }
     } catch (err) { console.error('Failed to play:', err); }
@@ -137,27 +108,6 @@ function MusicTab() {
     } catch (err) { console.error('Failed to set volume:', err); }
   };
 
-  const toggleTrackSelection = (trackId) => {
-    setSelectedTracks(prev =>
-      prev.includes(trackId) ? prev.filter(id => id !== trackId) : [...prev, trackId]
-    );
-  };
-
-  const selectAll = () => {
-    const filtered = filteredTracks();
-    setSelectedTracks(filtered.map(t => t.id));
-  };
-
-  const filteredTracks = () => {
-    if (!search.trim()) return tracks;
-    const q = search.toLowerCase();
-    return tracks.filter(t =>
-      t.title.toLowerCase().includes(q) ||
-      t.artist.toLowerCase().includes(q) ||
-      t.album.toLowerCase().includes(q)
-    );
-  };
-
   const formatDuration = (secs) => {
     if (!secs) return '--:--';
     const m = Math.floor(secs / 60);
@@ -167,6 +117,11 @@ function MusicTab() {
 
   const isPlaying = playback?.playing;
   const currentTrack = playback?.currentTrack;
+
+  // Get tracks for a playlist
+  const getPlaylistTracks = (pl) => {
+    return pl.trackIds.map(id => tracks.find(t => t.id === id)).filter(Boolean);
+  };
 
   return (
     <div className="music-tab">
@@ -210,104 +165,79 @@ function MusicTab() {
 
       {/* Header */}
       <div className="cg-tab-header">
-        <button className="cg-create-btn" onClick={() => setCreating(!creating)}>
-          <i className={`fas ${creating ? 'fa-times' : 'fa-plus'}`}></i>
-          {creating ? ' Cancel' : ' New Playlist'}
-        </button>
+        <span className="music-info">
+          <i className="fas fa-folder-open"></i> {tracks.length} tracks in {playlists.length} playlist{playlists.length !== 1 ? 's' : ''}
+        </span>
         <button className="music-rescan-btn" onClick={rescan} disabled={scanning} title="Rescan music folder">
           <i className={`fas ${scanning ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
           {scanning ? ' Scanning...' : ' Rescan'}
         </button>
       </div>
 
-      {/* Create playlist form */}
-      {creating && (
-        <div className="cg-create-form">
-          <input
-            type="text"
-            className="cg-create-name"
-            placeholder="Playlist name"
-            value={newPlaylistName}
-            onChange={e => setNewPlaylistName(e.target.value)}
-          />
-
-          <div className="music-search-row">
-            <input
-              type="text"
-              className="music-search"
-              placeholder="Search tracks..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <button className="music-select-all" onClick={selectAll}>Select All</button>
-          </div>
-
-          <div className="music-track-list">
-            {filteredTracks().map(track => (
-              <label key={track.id} className={`cg-create-option${selectedTracks.includes(track.id) ? ' selected' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={selectedTracks.includes(track.id)}
-                  onChange={() => toggleTrackSelection(track.id)}
-                />
-                <div className="music-track-info">
-                  <span className="music-track-title">{track.title}</span>
-                  <span className="music-track-detail">{track.artist} — {track.album}</span>
-                </div>
-                <span className="music-track-duration">{formatDuration(track.duration)}</span>
-              </label>
-            ))}
-            {filteredTracks().length === 0 && (
-              <div className="music-empty">
-                {tracks.length === 0 ? 'No tracks found. Click Rescan to index your music folder.' : 'No matching tracks.'}
-              </div>
-            )}
-          </div>
-
-          <button
-            className="cg-create-save"
-            onClick={createPlaylist}
-            disabled={!newPlaylistName.trim() || selectedTracks.length === 0}
-          >
-            <i className="fas fa-check"></i> Create Playlist ({selectedTracks.length} track{selectedTracks.length !== 1 ? 's' : ''})
-          </button>
-        </div>
-      )}
+      <p className="music-hint">
+        Playlists are created automatically from subfolders in the music directory.
+        Drop files into a subfolder and hit Rescan.
+      </p>
 
       {/* Playlists */}
-      {playlists.length === 0 && !creating ? (
+      {playlists.length === 0 ? (
         <div className="empty-state">
           <i className="fas fa-music"></i>
           <p>No playlists yet</p>
-          <p className="hint">Create a playlist to start streaming to your HomePod</p>
+          <p className="hint">Create subfolders in your music directory and add audio files, then hit Rescan</p>
         </div>
       ) : (
         <div className="cg-list">
-          {playlists.map(pl => (
-            <div key={pl.id} className={`cg-card${playback?.playlistId === pl.id && isPlaying ? ' cg-running' : ''}`}>
-              <div className="cg-row">
-                <button
-                  className={`cg-play-btn${playback?.playlistId === pl.id && isPlaying ? ' running' : ''}`}
-                  onClick={() => {
-                    if (playback?.playlistId === pl.id && isPlaying) stopPlayback();
-                    else playPlaylist(pl.id);
-                  }}
-                  disabled={loadingAction !== null}
-                  title={playback?.playlistId === pl.id && isPlaying ? 'Stop' : 'Play'}
-                >
-                  <i className={`fas ${
-                    loadingAction === `play-${pl.id}` ? 'fa-spinner fa-spin' :
-                    playback?.playlistId === pl.id && isPlaying ? 'fa-stop' : 'fa-play'
-                  }`}></i>
-                </button>
-                <span className="cg-name">{pl.name}</span>
-                <span className="cg-member-count">{pl.trackIds.length} track{pl.trackIds.length !== 1 ? 's' : ''}</span>
-                <button className="music-delete-btn" onClick={() => deletePlaylist(pl.id)} title="Delete playlist">
-                  <i className="fas fa-trash-alt"></i>
-                </button>
+          {playlists.map(pl => {
+            const plTracks = getPlaylistTracks(pl);
+            const isExpanded = expandedPlaylist === pl.id;
+            const isThisPlaying = playback?.playlistId === pl.id && isPlaying;
+
+            return (
+              <div key={pl.id} className={`cg-card${isThisPlaying ? ' cg-running' : ''}`}>
+                <div className="cg-row" onClick={() => setExpandedPlaylist(isExpanded ? null : pl.id)}>
+                  <button
+                    className={`cg-play-btn${isThisPlaying ? ' running' : ''}`}
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (isThisPlaying) stopPlayback();
+                      else playPlaylist(pl.id);
+                    }}
+                    disabled={loadingAction !== null}
+                    title={isThisPlaying ? 'Stop' : 'Play'}
+                  >
+                    <i className={`fas ${
+                      loadingAction === `play-${pl.id}` ? 'fa-spinner fa-spin' :
+                      isThisPlaying ? 'fa-stop' : 'fa-play'
+                    }`}></i>
+                  </button>
+                  <span className="cg-name">
+                    <i className="fas fa-folder" style={{ marginRight: 6, opacity: 0.5 }}></i>
+                    {pl.name}
+                  </span>
+                  <span className="cg-member-count">{pl.trackIds.length} track{pl.trackIds.length !== 1 ? 's' : ''}</span>
+                  <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} cg-chevron`}></i>
+                </div>
+
+                {isExpanded && (
+                  <div className="cg-details">
+                    <div className="music-track-list-compact">
+                      {plTracks.map((t, i) => (
+                        <div key={t.id} className={`music-track-row${isThisPlaying && playback?.queuePosition === i ? ' music-track-active' : ''}`}>
+                          <span className="music-track-num">{i + 1}</span>
+                          <div className="music-track-info">
+                            <span className="music-track-title">{t.title}</span>
+                            <span className="music-track-detail">{t.artist}</span>
+                          </div>
+                          <span className="music-track-duration">{formatDuration(t.duration)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

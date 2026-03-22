@@ -1,7 +1,7 @@
-// ChaseGroupCard.js — expandable chase group with play/stop, colors, speed
+// ChaseGroupCard.js — expandable chase group with play/stop, colors, speed, playlist
 const { useState, useEffect } = React;
 
-function ChaseGroupCard({ group, onDelete, onUpdate }) {
+function ChaseGroupCard({ group, playlists, onDelete, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [running, setRunning] = useState(group.running || false);
   const [speed, setSpeed] = useState(group.speed || 1000);
@@ -66,6 +66,11 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
     onUpdate(group.id, updates);
   };
 
+  const handlePlaylistChange = (e) => {
+    const val = e.target.value || null;
+    onUpdate(group.id, { playlistId: val });
+  };
+
   const saveName = () => {
     setEditing(false);
     if (editName !== group.name) onUpdate(group.id, { name: editName });
@@ -75,6 +80,8 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
     if (m.type === 'sequence') return `${m.name || 'Sequence'} (${m.lightCount || '?'} lights)`;
     return m.name || 'Light Strip';
   };
+
+  const linkedPlaylist = (playlists || []).find(p => p.id === group.playlistId);
 
   return (
     <div className={`cg-card${running ? ' cg-running' : ''}`}>
@@ -111,6 +118,13 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
 
         <span className="cg-member-count">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</span>
 
+        {/* Playlist indicator */}
+        {linkedPlaylist && (
+          <span className="cg-playlist-badge" title={`Playlist: ${linkedPlaylist.name}`}>
+            <i className="fas fa-music"></i>
+          </span>
+        )}
+
         {/* Inline color swatches */}
         <div className="cg-color-preview" onClick={e => e.stopPropagation()}>
           <span className="cg-swatch-mini" style={{ background: bgColor }} title="Background color"></span>
@@ -132,6 +146,26 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
                 <span>{memberLabel(m)}</span>
               </div>
             ))}
+          </div>
+
+          {/* Playlist picker */}
+          <div className="cg-control-row">
+            <span className="cg-section-label">
+              <i className="fas fa-music" style={{ marginRight: 4 }}></i> Playlist
+            </span>
+            <select
+              className="cg-playlist-select"
+              value={group.playlistId || ''}
+              onChange={handlePlaylistChange}
+              onClick={e => e.stopPropagation()}
+            >
+              <option value="">None (lights only)</option>
+              {(playlists || []).map(pl => (
+                <option key={pl.id} value={pl.id}>
+                  {pl.name} ({pl.trackIds.length} tracks)
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Speed slider */}

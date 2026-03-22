@@ -1556,3 +1556,66 @@ input[type="range"]::-moz-range-thumb {
   margin-left: auto;
 }
 .music-delete-btn:hover { opacity: 1; color: #fca5a5; }
+
+/* Music info + hint */
+.music-info {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.music-hint {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  margin: -4px 0 12px;
+  opacity: 0.7;
+}
+
+/* Track list within expanded playlist */
+.music-track-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.music-track-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.music-track-row:hover { background: rgba(255,255,255,0.03); }
+.music-track-row.music-track-active {
+  background: rgba(139,92,246,0.1);
+  border-left: 2px solid var(--accent-purple);
+}
+.music-track-num {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Playlist picker in chase group card */
+.cg-playlist-select {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.cg-playlist-select option {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+.cg-playlist-badge {
+  color: #a78bfa;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}

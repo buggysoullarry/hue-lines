@@ -7,6 +7,7 @@ function App() {
   const [rooms, setRooms] = useState([]);
   const [sequences, setSequences] = useState([]);
   const [chaseGroups, setChaseGroups] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
   const [bridgeError, setBridgeError] = useState(null);
   const roomOrderKey = 'hue-room-order';
 
@@ -53,7 +54,16 @@ function App() {
     }
   };
 
-  const loadAll = () => { loadRooms(); loadSequences(); loadChaseGroups(); };
+  const loadPlaylists = async () => {
+    try {
+      const resp = await fetch('/api/music/playlists');
+      if (resp.ok) setPlaylists(await resp.json());
+    } catch (err) {
+      console.warn('Could not load playlists:', err.message);
+    }
+  };
+
+  const loadAll = () => { loadRooms(); loadSequences(); loadChaseGroups(); loadPlaylists(); };
 
   useEffect(() => {
     loadAll();
@@ -202,7 +212,8 @@ function App() {
           chaseGroups={chaseGroups}
           sequences={sequences}
           rooms={rooms}
-          onRefresh={loadChaseGroups}
+          playlists={playlists}
+          onRefresh={() => { loadChaseGroups(); loadPlaylists(); }}
         />
       )}
 
