@@ -197,6 +197,17 @@ router.put('/play-all', async (req, res) => {
     }
   }
 
+  // Play the playlist from the first chase group that has one
+  const firstWithPlaylist = cgs.find(cg => cg.playlistId);
+  if (firstWithPlaylist) {
+    try {
+      playback.play(firstWithPlaylist.playlistId, { shuffle: true });
+      log.info(`Started playlist ${firstWithPlaylist.playlistId} from chase group ${firstWithPlaylist.name}`);
+    } catch (err) {
+      errors.push(`playlist: ${err.message}`);
+    }
+  }
+
   res.json({ success: true, ...(errors.length && { warnings: errors }) });
 });
 
