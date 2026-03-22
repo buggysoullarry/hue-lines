@@ -325,7 +325,147 @@ A small SwiftUI macOS app that lives in the menu bar (top-right of screen, next 
 
 ---
 
-## Phase 8: Polish & Future Ideas
+## Phase 8: HomePod Audio + "Vibe Mode"
+
+**Goal:** Stream music to HomePod from the server and sync it with chase animations — one button press to start the whole experience.
+
+### Concept: Vibe Mode
+A "Vibe Mode" button on the dashboard that, with a single tap:
+1. Starts a chase group (lights start chasing)
+2. Starts streaming a music playlist to the HomePod
+
+Stop it, and both the music and the lights return to their previous state.
+
+### Architecture
+```
+┌─────────────────────────────────────┐
+│  Web UI                             │
+│  [▶ Vibe Mode] ──────────────────── │──→ PUT /api/vibe/play
+│  Playlist picker, volume control    │
+└─────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────┐
+│  server.js / api/vibe.js            │
+│  - Starts chase group               │
+│  - Starts audio stream to HomePod   │
+└─────────────────────────────────────┘
+          │                    │
+          ▼                    ▼
+   Chase Groups API      Audio Streamer
+   (existing)             (new module)
+                               │
+                               ▼
+                    ┌─────────────────┐
+                    │ lib/audio/      │
+                    │ streamer.js     │──→ node_airtunes2 ──→ HomePod (AirPlay)
+                    │ playlist.js     │──→ ffmpeg (decode MP3 → PCM)
+                    │ library.js      │──→ scan music folder, build index
+                    └─────────────────┘
+```
+
+### Prerequisites
+- `ffmpeg` installed on Mac Mini (`brew install ffmpeg`)
+- Music files (MP3/M4A/FLAC) in a folder on the Mac Mini (e.g., `~/Music/coding/`)
+- HomePod reachable on the local network
+
+### Tasks
+
+#### Phase 8a: Audio Streaming Foundation
+- [ ] **Install dependencies** — `npm install node_airtunes2`
+- [ ] **Music library module** — `lib/audio/library.js`:
+  - Scan a configured music directory recursively for audio files
+  - Extract metadata (artist, album, title, duration) using ffprobe
+  - Build an in-memory index, persist to `musicLibrary.json`
+  - API: `getLibrary()`, `rescanLibrary()`, `getTrackPath(trackId)`
+- [ ] **Playlist module** — `lib/audio/playlist.js`:
+  - CRUD for playlists (stored in `playlists.json`)
+  - Playlist = name + ordered list of track IDs
+  - Queue management: current track index, shuffle, repeat modes
+  - API: `nextTrack()`, `prevTrack()`, `currentTrack()`, `shuffle()`
+- [ ] **Audio streamer module** — `lib/audio/streamer.js`:
+  - Connect to HomePod via `node_airtunes2` using its IP
+  - Decode audio files to PCM via ffmpeg child process (spawn, pipe stdout)
+  - Stream PCM to AirTunes device
+  - Controls: play, pause, stop, skip, volume
+  - Events: `trackStarted`, `trackEnded`, `error`
+  - Auto-advance to next track in playlist when current track ends
+- [ ] **HomePod discovery** — Find HomePod on the network:
+  - mDNS/Bonjour lookup for `_raop._tcp` services
+  - Or manual IP config in `config.json`
+
+#### Phase 8b: API Endpoints
+- [ ] **Music library API** — `api/music.js`:
+  - `GET /api/music/library` — List all tracks (with search/filter)
+  - `POST /api/music/library/rescan` — Re-scan music directory
+  - `GET /api/music/playlists` — List playlists
+  - `POST /api/music/playlists` — Create playlist
+  - `PUT /api/music/playlists/:id` — Update playlist
+  - `DELETE /api/music/playlists/:id` — Delete playlist
+- [ ] **Playback API** — `api/playback.js`:
+  - `PUT /api/playback/play` — Start playing (playlist ID, optional track index)
+  - `PUT /api/playback/pause` — Pause
+  - `PUT /api/playback/stop` — Stop and disconnect from HomePod
+  - `PUT /api/playback/skip` — Next track
+  - `PUT /api/playback/prev` — Previous track
+  - `PUT /api/playback/volume` — Set volume (0-100)
+  - `GET /api/playback/status` — Current track, position, playing/paused, volume
+
+#### Phase 8c: Vibe Mode (Lights + Music Together)
+- [ ] **Vibe config** — `api/vibe.js`:
+  - A "vibe" = a chase group ID + a playlist ID + volume level
+  - `GET /api/vibes` — List saved vibes
+  - `POST /api/vibes` — Create a vibe
+  - `PUT /api/vibes/:id/play` — Start both chase group and playlist
+  - `PUT /api/vibes/:id/stop` — Stop both, restore light states
+- [ ] **Dashboard button** — Single play/stop button for the active vibe
+- [ ] **Now Playing UI** — Show current track, progress, skip/prev/volume controls
+
+#### Phase 8d: Frontend
+- [ ] **Music tab or section** — Browse library, manage playlists
+- [ ] **Playlist builder** — Drag tracks into playlists, reorder
+- [ ] **Now Playing bar** — Persistent bottom bar when music is playing:
+  - Track name, artist, album art (if available)
+  - Play/pause, skip, prev, volume slider
+  - Shows which HomePod is playing
+- [ ] **Vibe Mode card** — On the Chase Groups tab or a new tab:
+  - Pick a chase group + playlist → save as a vibe
+  - One-tap play/stop
+
+### Music File Setup
+- Import music files to `~/Music/coding/` on the Mac Mini
+- The exported playlist files (`~/music_playlists.txt`, `~/music_albums.txt`) can guide which albums to include
+- Supported formats: MP3, M4A, AAC, FLAC, WAV (anything ffmpeg can decode)
+
+### Config
+Add to `config.json`:
+```json
+{
+  "audio": {
+    "musicDir": "/Users/plex/Music/coding",
+    "homepod": {
+      "name": "Office HomePod",
+      "ip": "192.168.0.XX"
+    }
+  }
+}
+```
+
+### Key Files to Create
+| File | Purpose |
+|------|---------|
+| `lib/audio/streamer.js` | AirPlay streaming via node_airtunes2 + ffmpeg |
+| `lib/audio/playlist.js` | Playlist management and queue |
+| `lib/audio/library.js` | Music file scanning and metadata indexing |
+| `api/music.js` | Music library and playlist CRUD endpoints |
+| `api/playback.js` | Playback control endpoints |
+| `api/vibe.js` | Vibe mode (lights + music combo) endpoints |
+| `playlists.json` | Persisted playlists |
+| `musicLibrary.json` | Cached music library index |
+
+---
+
+## Phase 9: Polish & Future Ideas
 
 **Goal:** Nice-to-haves once everything is running solid.
 
@@ -356,9 +496,10 @@ A small SwiftUI macOS app that lives in the menu bar (top-right of screen, next 
 | 5. Voice | Siri Shortcuts + Homebridge | Done | Small-Medium |
 | 6. Scheduling | Auto start/stop chase groups by time | Done | Small |
 | 7. SSL | Let's Encrypt via Caddy for huechaser.duckdns.org | Done | Small |
-| 8. Polish | More animations, transitions | Everything | Ongoing |
+| 8. HomePod Audio | Stream music to HomePod, Vibe Mode | Phase 3 + ffmpeg | Large |
+| 9. Polish | More animations, transitions | Everything | Ongoing |
 
-**Next up:** 4 → 5 → 6 → 7 → 8
+**Next up:** 8a (audio foundation) → 8b (API) → 8c (vibe mode) → 8d (frontend) → 4 → 5 → 6 → 7 → 9
 
 ### Deployment Details (Completed)
 - **Mac Mini**: `plex@192.168.0.50` (hostname: `mac-mini` via /etc/hosts on iMac)

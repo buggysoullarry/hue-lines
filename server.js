@@ -8,6 +8,8 @@ const lightsRouter = require('./api/lights');
 const bridgeRouter = require('./api/bridge');
 const sequencesRouter = require('./api/sequences');
 const chaseGroupsRouter = require('./api/chaseGroups');
+const musicRouter = require('./api/music');
+const playbackRouter = require('./api/playback');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -88,6 +90,8 @@ app.use('/api/bridge', bridgeRouter);
 app.use('/api/sequences', sequencesRouter);
 app.use('/api/groups', sequencesRouter); // backwards compat
 app.use('/api/chase-groups', chaseGroupsRouter);
+app.use('/api/music', musicRouter);
+app.use('/api/playback', playbackRouter);
 
 // Fallback for SPA (serve index.html for non-API routes)
 app.use((req, res) => {

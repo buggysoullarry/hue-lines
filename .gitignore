@@ -14,6 +14,9 @@ config.json
 groups.json
 sequences.json
 chaseGroups.json
+playlists.json
+musicLibrary.json
+deploy-timestamp.txt
 
 # IDE
 .vscode/
