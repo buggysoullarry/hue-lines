@@ -150,6 +150,7 @@ function MusicTab() {
                 onChange={e => setVolume(e.target.value)}
                 title={`Volume: ${playback?.volume || 50}%`}
               />
+              <span className="np-volume-pct">{playback?.volume || 50}%</span>
             </div>
           </div>
           <div className="now-playing-progress">
