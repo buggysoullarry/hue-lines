@@ -465,7 +465,56 @@ Add to `config.json`:
 
 ---
 
-## Phase 9: Polish & Future Ideas
+## Phase 9: Motion Sensor Auto-Off
+
+**Goal:** Automatically stop chase groups when no one is in the room, using a Hue motion sensor.
+
+### Concept
+The Hue Bridge EventStream already pushes motion sensor events (same SSE connection we use for Tap buttons). When motion stops being detected for a configurable timeout (e.g., 15 minutes), automatically stop the active chase group and music.
+
+### Architecture
+```
+Hue Motion Sensor → (Zigbee) → Hue Bridge → EventStream → hueEventStream.js
+                                                              ↓
+                                                    Check: no motion for X min?
+                                                              ↓
+                                                    Stop chase group + music
+```
+
+### Tasks
+- [ ] **Discover motion sensors** — `GET /clip/v2/resource/motion` to find sensor resource IDs
+- [ ] **Listen for motion events** — Filter EventStream for `type: "motion"` updates
+  - Motion detected: `motion.motion: true`
+  - No motion: `motion.motion: false`
+- [ ] **Configurable timeout** — Per chase group setting: "auto-off after X minutes of no motion"
+- [ ] **Chase group model update** — Add optional fields:
+  ```json
+  {
+    "motionSensorId": "uuid-of-sensor",
+    "autoOffMinutes": 15
+  }
+  ```
+- [ ] **Motion sensor picker in UI** — Dropdown in chase group card (like the button/playlist pickers)
+- [ ] **Timeout logic** — When motion stops, start a timer. If motion resumes, cancel it. If timer expires, stop the chase group.
+- [ ] **Re-arm on motion** — Optionally restart the chase group when motion is detected again (configurable)
+
+### Key Endpoints
+| Purpose | Endpoint |
+|---|---|
+| List motion sensors | `GET /clip/v2/resource/motion` |
+| EventStream (already connected) | `GET /eventstream/clip/v2` |
+
+### Files to Modify
+| File | Action |
+|------|--------|
+| `lib/hueEventStream.js` | Add motion event handling |
+| `api/chaseGroups.js` | Add motionSensorId/autoOffMinutes fields |
+| `public/components/ChaseGroupCard.js` | Add motion sensor picker + timeout setting |
+| `api/buttons.js` | Add motion sensor discovery endpoint |
+
+---
+
+## Phase 10: Polish & Future Ideas
 
 **Goal:** Nice-to-haves once everything is running solid.
 
@@ -496,10 +545,12 @@ Add to `config.json`:
 | 5. Voice | Siri Shortcuts + Homebridge | Done | Small-Medium |
 | 6. Scheduling | Auto start/stop chase groups by time | Done | Small |
 | 7. SSL | Let's Encrypt via Caddy for huechaser.duckdns.org | Done | Small |
-| 8. HomePod Audio | Stream music to HomePod, Vibe Mode | Phase 3 + ffmpeg | Large |
-| 9. Polish | More animations, transitions | Everything | Ongoing |
+| ~~8. HomePod Audio~~ | ~~Stream music to HomePod, folder playlists, chase group integration~~ | ~~Phase 3 + ffmpeg~~ | ~~Done~~ |
+| ~~8.5 Tap Button~~ | ~~Hue Tap Switch toggles chase groups via EventStream~~ | ~~Phase 8~~ | ~~Done~~ |
+| 9. Motion Auto-Off | Stop chase when room is empty (Hue motion sensor) | Phase 8.5 | Small |
+| 10. Polish | More animations, transitions | Everything | Ongoing |
 
-**Next up:** 8a (audio foundation) → 8b (API) → 8c (vibe mode) → 8d (frontend) → 4 → 5 → 6 → 7 → 9
+**Next up:** 9 → 4 → 5 → 6 → 7 → 10
 
 ### Deployment Details (Completed)
 - **Mac Mini**: `plex@192.168.0.50` (hostname: `mac-mini` via /etc/hosts on iMac)
