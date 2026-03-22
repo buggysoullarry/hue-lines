@@ -87,7 +87,18 @@ function MusicTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playlistId })
       });
-      await loadPlayback();
+      // Poll until playback actually starts (HomePod connection takes a few seconds)
+      for (let i = 0; i < 20; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const resp = await fetch('/api/playback/status');
+        if (resp.ok) {
+          const status = await resp.json();
+          if (status.playing) {
+            setPlayback(status);
+            break;
+          }
+        }
+      }
     } catch (err) { console.error('Failed to play:', err); }
     setLoadingAction(null);
   };
