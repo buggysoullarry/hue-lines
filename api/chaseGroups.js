@@ -7,12 +7,20 @@ const fs = require('fs');
 const path = require('path');
 const { startGroupChase, stopGroupChase, updateGroupChaseSpeed, isGroupChaseRunning } = require('../lib/animations/groupChase');
 const { startChase, stopChase, updateChaseSpeed, updateChaseColors, isStripChaseRunning } = require('../lib/animations/omniglowChase');
-const { getLightV2, setLightColor } = require('../lib/hue');
+const { getLightV2, setLightColor, setLightOn } = require('../lib/hue');
 const log = require('../lib/logger');
 const playback = require('../lib/audio/playback');
 
 const cgPath = path.join(__dirname, '..', 'chaseGroups.json');
 const seqPath = path.join(__dirname, '..', 'sequences.json');
+const buttonStatePath = path.join(__dirname, '..', 'buttonState.json');
+
+function setButtonState(cgId, running) {
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(buttonStatePath, 'utf8')); } catch {}
+  state[cgId] = running;
+  fs.writeFileSync(buttonStatePath, JSON.stringify(state), 'utf8');
+}
 
 // In-memory state snapshots: chaseGroupId -> { lights: { lightId: { on, color, bri } } }
 const stateSnapshots = new Map();
@@ -309,6 +317,11 @@ router.put('/:id/play', async (req, res) => {
   const lightIds = getChaseGroupLightIds(cg);
   await snapshotLightStates(cg.id, lightIds);
 
+  // Ensure all lights are on before starting chase
+  for (const lightId of lightIds) {
+    try { await setLightOn(lightId); } catch {}
+  }
+
   // Start all members with the group's settings
   const errors = [];
   for (const member of cg.members) {
@@ -340,6 +353,8 @@ router.put('/:id/play', async (req, res) => {
     }
   }
 
+  setButtonState(cg.id, true);
+
   if (errors.length) {
     res.json({ success: true, warnings: errors });
   } else {
@@ -366,6 +381,8 @@ router.put('/:id/stop', async (req, res) => {
   if (cg.playlistId) {
     playback.stop();
   }
+
+  setButtonState(cg.id, false);
 
   await restoreLightStates(cg.id);
   res.json({ success: true });

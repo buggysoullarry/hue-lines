@@ -107,15 +107,22 @@ app.listen(PORT, () => {
   log.info(`Server running at http://localhost:${PORT}/`);
 
   // Connect to Hue Bridge EventStream for button press handling
-  const { isGroupChaseRunning } = require('./lib/animations/groupChase');
-  const { isStripChaseRunning } = require('./lib/animations/omniglowChase');
+  // Track which chase groups are active (file-backed so it survives restarts)
+  const buttonStatePath = path.join(__dirname, 'buttonState.json');
+  function getButtonState() {
+    try { return JSON.parse(fs.readFileSync(buttonStatePath, 'utf8')); }
+    catch { return {}; }
+  }
+  function setButtonState(cgId, running) {
+    const state = getButtonState();
+    state[cgId] = running;
+    fs.writeFileSync(buttonStatePath, JSON.stringify(state), 'utf8');
+  }
 
   connectEventStream((buttonEvent) => {
     // Find which chase group has this button assigned
-    const cgFs = require('fs');
-    const cgPath = require('path').join(__dirname, 'chaseGroups.json');
     let cgs = [];
-    try { cgs = JSON.parse(cgFs.readFileSync(cgPath, 'utf8')); } catch {}
+    try { cgs = JSON.parse(fs.readFileSync(path.join(__dirname, 'chaseGroups.json'), 'utf8')); } catch {}
 
     const cg = cgs.find(g => g.buttonId === buttonEvent.buttonId);
     if (!cg) {
@@ -123,14 +130,12 @@ app.listen(PORT, () => {
       return;
     }
 
-    const isRunning = cg.members.some(m => {
-      if (m.type === 'sequence') return isGroupChaseRunning(m.id);
-      if (m.type === 'strip') return isStripChaseRunning(m.id);
-      return false;
-    });
-
+    const state = getButtonState();
+    const isRunning = state[cg.id] || false;
     const endpoint = isRunning ? 'stop' : 'play';
+
     log.info(`Tap button pressed → ${endpoint} chase group "${cg.name}"`);
+    setButtonState(cg.id, !isRunning);
 
     // Use internal HTTP to trigger play/stop (reuses all existing logic including music)
     const http = require('http');

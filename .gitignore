@@ -19,6 +19,7 @@ musicLibrary.json
 deploy-timestamp.txt
 sessions.json
 buttonMap.json
+buttonState.json
 
 # IDE
 .vscode/
