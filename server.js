@@ -118,7 +118,10 @@ app.listen(PORT, () => {
     try { cgs = JSON.parse(cgFs.readFileSync(cgPath, 'utf8')); } catch {}
 
     const cg = cgs.find(g => g.buttonId === buttonEvent.buttonId);
-    if (!cg) return;
+    if (!cg) {
+      log.info(`Button ${buttonEvent.buttonId} pressed but not mapped to any chase group`);
+      return;
+    }
 
     const isRunning = cg.members.some(m => {
       if (m.type === 'sequence') return isGroupChaseRunning(m.id);
