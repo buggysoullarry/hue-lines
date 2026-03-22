@@ -141,6 +141,9 @@ function App() {
           <button className={`header-tab${tab === 'chase-groups' ? ' active' : ''}`} onClick={() => saveTab('chase-groups')}>
             <i className="fas fa-bolt"></i> Chase Groups
           </button>
+          <button className={`header-tab${tab === 'music' ? ' active' : ''}`} onClick={() => saveTab('music')}>
+            <i className="fas fa-music"></i> Music
+          </button>
         </nav>
         <button className="debug-btn" onClick={() => setDebugOpen(!debugOpen)} title="Debug log">
           <i className="fas fa-bug"></i>
@@ -202,6 +205,9 @@ function App() {
           onRefresh={loadChaseGroups}
         />
       )}
+
+      {/* Music tab */}
+      {tab === 'music' && <MusicTab />}
     </>
   );
 }

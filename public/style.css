@@ -1385,3 +1385,174 @@ input[type="range"]::-moz-range-thumb {
   .light-toggle::after { width: 14px; height: 14px; }
   .light-toggle.on::after { transform: translateX(14px); }
 }
+
+/* ============================================
+   Music Tab
+   ============================================ */
+.music-tab { padding: 16px; max-width: 700px; margin: 0 auto; }
+
+/* Now Playing bar */
+.now-playing {
+  background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.08));
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.now-playing-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.now-playing-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+.now-playing-artist {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.now-playing-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.np-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+.np-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.np-btn.np-stop { color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+.np-btn.np-stop:hover { background: rgba(239,68,68,0.12); }
+.np-volume {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.np-volume input[type="range"] { width: 80px; }
+.now-playing-progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-family: monospace;
+}
+.np-sep { opacity: 0.5; }
+.np-queue { margin-left: auto; font-family: inherit; }
+
+/* Rescan button */
+.music-rescan-btn {
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+  color: #93c5fd;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  transition: all 0.15s;
+}
+.music-rescan-btn:hover { background: rgba(59,130,246,0.15); }
+.music-rescan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Track list in create form */
+.music-search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.music-search {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+.music-select-all {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.music-select-all:hover { background: rgba(255,255,255,0.1); }
+.music-track-list {
+  max-height: 350px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.music-track-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.music-track-title {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.music-track-detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.music-track-duration {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  flex-shrink: 0;
+}
+.music-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 24px;
+}
+.music-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+.music-delete-btn:hover { opacity: 1; color: #fca5a5; }

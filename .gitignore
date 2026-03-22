@@ -17,6 +17,7 @@ chaseGroups.json
 playlists.json
 musicLibrary.json
 deploy-timestamp.txt
+sessions.json
 
 # IDE
 .vscode/
