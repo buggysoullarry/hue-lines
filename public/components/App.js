@@ -77,8 +77,11 @@ function App() {
 
   useEffect(() => {
     loadAll();
-    const interval = setInterval(loadAll, 30000);
-    return () => clearInterval(interval);
+    // Poll chase groups frequently (for button-triggered state changes)
+    const fastInterval = setInterval(() => { loadChaseGroups(); }, 5000);
+    // Poll everything else less often
+    const slowInterval = setInterval(loadAll, 30000);
+    return () => { clearInterval(fastInterval); clearInterval(slowInterval); };
   }, []);
 
   const onReconnect = () => loadAll();
