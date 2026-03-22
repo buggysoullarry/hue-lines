@@ -927,6 +927,19 @@ input[type="range"]::-moz-range-thumb {
 .debug-header-left { display: flex; align-items: center; gap: 6px; }
 .debug-header-right { display: flex; align-items: center; gap: 8px; }
 .debug-title { font-weight: 600; color: var(--text-secondary); font-size: 0.82rem; letter-spacing: 0.3px; }
+.deploy-timestamp {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.deploy-timestamp .fa-rocket { font-size: 0.65rem; color: #a78bfa; }
 .debug-close-btn {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.06);

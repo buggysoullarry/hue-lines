@@ -45,12 +45,32 @@ window.fetch = async function(url, opts) {
   return _originalFetch.call(this, url, opts);
 };
 
+function formatRelativeTime(isoString) {
+  if (!isoString) return null;
+  const diff = Date.now() - new Date(isoString).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return new Date(isoString).toLocaleDateString();
+}
+
 // Debug modal component
 function DebugModal({ onClose }) {
   const [logs, setLogs] = useState([...window._hueLog]);
   const [filter, setFilter] = useState('all');
   const [copiedId, setCopiedId] = useState(null);
+  const [deployedAt, setDeployedAt] = useState(null);
+  const [, setTick] = useState(0);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/api/deploy-info').then(r => r.json()).then(d => setDeployedAt(d.deployedAt)).catch(() => {});
+    const interval = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const listener = (newLogs) => setLogs(newLogs);
@@ -119,6 +139,11 @@ function DebugModal({ onClose }) {
             <i className="fas fa-bug" style={{ color: 'var(--accent-purple)', marginRight: 8 }}></i>
             <span className="debug-title">Debug Log</span>
             {errorCount > 0 && <span className="log-error-badge">{errorCount}</span>}
+            {deployedAt && (
+              <span className="deploy-timestamp" title={`Deployed: ${new Date(deployedAt).toLocaleString()}`}>
+                <i className="fas fa-rocket"></i> {formatRelativeTime(deployedAt)}
+              </span>
+            )}
           </div>
           <div className="debug-header-right">
             <select className="log-filter" value={filter} onChange={e => setFilter(e.target.value)}>

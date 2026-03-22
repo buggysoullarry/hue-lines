@@ -8,6 +8,7 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
   const [bgColor, setBgColor] = useState(group.bgColor || '#800080');
   const [headColor, setHeadColor] = useState(group.headColor || '#0000ff');
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [editName, setEditName] = useState(group.name);
 
   useEffect(() => {
@@ -19,16 +20,21 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
   }, [group]);
 
   const togglePlay = async () => {
-    if (running) {
-      await fetch(`/api/chase-groups/${group.id}/stop`, { method: 'PUT' });
-      setRunning(false);
-    } else {
-      await fetch(`/api/chase-groups/${group.id}/play`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ speed, bgColor, headColor })
-      });
-      setRunning(true);
+    setLoading(true);
+    try {
+      if (running) {
+        await fetch(`/api/chase-groups/${group.id}/stop`, { method: 'PUT' });
+        setRunning(false);
+      } else {
+        await fetch(`/api/chase-groups/${group.id}/play`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speed, bgColor, headColor })
+        });
+        setRunning(true);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,9 +83,10 @@ function ChaseGroupCard({ group, onDelete, onUpdate }) {
         <button
           className={`cg-play-btn${running ? ' running' : ''}`}
           onClick={e => { e.stopPropagation(); togglePlay(); }}
+          disabled={loading}
           title={running ? 'Stop' : 'Play'}
         >
-          <i className={`fas ${running ? 'fa-stop' : 'fa-play'}`}></i>
+          <i className={`fas ${loading ? 'fa-spinner fa-spin' : running ? 'fa-stop' : 'fa-play'}`}></i>
         </button>
 
         {editing ? (

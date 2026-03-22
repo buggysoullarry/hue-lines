@@ -5,6 +5,7 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, onRefresh }) {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]); // [{ type, id, name }]
+  const [loadingAction, setLoadingAction] = useState(null); // 'play' | 'stop' | null
 
   // Get all strips from rooms
   const allStrips = [];
@@ -67,20 +68,26 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, onRefresh }) {
   };
 
   const stopAll = async () => {
+    setLoadingAction('stop');
     try {
       await fetch('/api/chase-groups/stop-all', { method: 'PUT' });
       onRefresh();
     } catch (err) {
       console.error('Failed to stop all:', err);
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const playAll = async () => {
+    setLoadingAction('play');
     try {
       await fetch('/api/chase-groups/play-all', { method: 'PUT' });
       onRefresh();
     } catch (err) {
       console.error('Failed to play all:', err);
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -98,13 +105,15 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, onRefresh }) {
         </button>
         <div className="cg-bulk-controls">
           {(allStopped || mixed) && chaseGroups.length > 0 && (
-            <button className="cg-play-all-btn" onClick={playAll} title="Play all chase groups">
-              <i className="fas fa-play"></i> Play All
+            <button className="cg-play-all-btn" onClick={playAll} disabled={loadingAction !== null} title="Play all chase groups">
+              <i className={`fas ${loadingAction === 'play' ? 'fa-spinner fa-spin' : 'fa-play'}`}></i>
+              {loadingAction === 'play' ? ' Starting...' : ' Play All'}
             </button>
           )}
           {(allRunning || mixed) && (
-            <button className="cg-stop-all-btn" onClick={stopAll} title="Stop all chase groups">
-              <i className="fas fa-stop"></i> Stop All
+            <button className="cg-stop-all-btn" onClick={stopAll} disabled={loadingAction !== null} title="Stop all chase groups">
+              <i className={`fas ${loadingAction === 'stop' ? 'fa-spinner fa-spin' : 'fa-stop'}`}></i>
+              {loadingAction === 'stop' ? ' Stopping...' : ' Stop All'}
             </button>
           )}
         </div>

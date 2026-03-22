@@ -27,6 +27,14 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+// Public assets needed by login page (before auth middleware)
+const publicAssets = ['/logo-horizontal.png', '/favicon.svg', '/favicon-96x96.png', '/favicon.ico'];
+publicAssets.forEach(asset => {
+  app.get(asset, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', asset));
+  });
+});
+
 // Auth middleware — everything below requires authentication
 app.use(authMiddleware);
 
@@ -59,6 +67,18 @@ app.get('/api/health', async (req, res) => {
     bridge: { ip, reachable: bridgeReachable },
     uptime: Math.floor(process.uptime())
   });
+});
+
+// Deploy timestamp
+const fs = require('fs');
+const deployTimestampPath = path.join(__dirname, 'deploy-timestamp.txt');
+app.get('/api/deploy-info', (req, res) => {
+  try {
+    const ts = fs.readFileSync(deployTimestampPath, 'utf8').trim();
+    res.json({ deployedAt: ts });
+  } catch {
+    res.json({ deployedAt: null });
+  }
 });
 
 // API routes
