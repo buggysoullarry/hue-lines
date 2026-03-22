@@ -119,10 +119,17 @@ app.listen(PORT, () => {
     fs.writeFileSync(buttonStatePath, JSON.stringify(state), 'utf8');
   }
 
-  connectEventStream((buttonEvent) => {
+  const { startGroupChase, stopGroupChase } = require('./lib/animations/groupChase');
+  const { startChase, stopChase } = require('./lib/animations/omniglowChase');
+  const { setLightOn } = require('./lib/hue');
+  const playback = require('./lib/audio/playback');
+
+  connectEventStream(async (buttonEvent) => {
     // Find which chase group has this button assigned
     let cgs = [];
     try { cgs = JSON.parse(fs.readFileSync(path.join(__dirname, 'chaseGroups.json'), 'utf8')); } catch {}
+    let seqs = [];
+    try { seqs = JSON.parse(fs.readFileSync(path.join(__dirname, 'sequences.json'), 'utf8')); } catch {}
 
     const cg = cgs.find(g => g.buttonId === buttonEvent.buttonId);
     if (!cg) {
@@ -132,24 +139,67 @@ app.listen(PORT, () => {
 
     const state = getButtonState();
     const isRunning = state[cg.id] || false;
-    const endpoint = isRunning ? 'stop' : 'play';
 
-    log.info(`Tap button pressed → ${endpoint} chase group "${cg.name}"`);
-    setButtonState(cg.id, !isRunning);
+    if (isRunning) {
+      // STOP
+      log.info(`Tap button → stopping chase group "${cg.name}"`);
+      setButtonState(cg.id, false);
 
-    // Use internal HTTP to trigger play/stop (reuses all existing logic including music)
-    const http = require('http');
-    const reqOpts = {
-      hostname: '127.0.0.1',
-      port: PORT,
-      path: `/api/chase-groups/${cg.id}/${endpoint}`,
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-    };
-    const r = http.request(reqOpts);
-    if (endpoint === 'play') {
-      r.write(JSON.stringify({ speed: cg.speed, bgColor: cg.bgColor, headColor: cg.headColor }));
+      for (const member of cg.members) {
+        if (member.type === 'sequence') stopGroupChase(member.id);
+        else if (member.type === 'strip') stopChase(member.id);
+      }
+      if (cg.playlistId) playback.stop();
+    } else {
+      // PLAY
+      log.info(`Tap button → starting chase group "${cg.name}"`);
+      setButtonState(cg.id, true);
+
+      const speed = cg.speed || 1000;
+      const bgColor = cg.bgColor || '#800080';
+      const headColor = cg.headColor || '#0000ff';
+
+      // Turn on all lights first
+      for (const member of cg.members) {
+        if (member.type === 'sequence') {
+          const seq = seqs.find(s => s.id === member.id);
+          if (seq) {
+            for (const lightId of seq.lightIds) {
+              try { await setLightOn(lightId); } catch {}
+            }
+          }
+        } else if (member.type === 'strip') {
+          try { await setLightOn(member.id); } catch {}
+        }
+      }
+
+      // Start chases
+      for (const member of cg.members) {
+        try {
+          if (member.type === 'sequence') {
+            const seq = seqs.find(s => s.id === member.id);
+            if (seq) {
+              stopGroupChase(seq.id);
+              startGroupChase(seq.id, seq.lightIds, speed, bgColor, headColor);
+            }
+          } else if (member.type === 'strip') {
+            stopChase(member.id);
+            await startChase(member.id, speed, bgColor, headColor);
+          }
+        } catch (err) {
+          log.error(`Button chase start error: ${err.message}`);
+        }
+      }
+
+      // Start playlist
+      if (cg.playlistId) {
+        try {
+          playback.play(cg.playlistId, { shuffle: true });
+          log.info(`Started playlist for "${cg.name}"`);
+        } catch (err) {
+          log.error(`Button playlist start error: ${err.message}`);
+        }
+      }
     }
-    r.end();
   });
 });
