@@ -1050,6 +1050,26 @@ input[type="range"]::-moz-range-thumb {
   transition: all 0.15s;
 }
 .cg-create-btn:hover { background: rgba(139,92,246,0.18); }
+.cg-bulk-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.cg-play-all-btn {
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.2);
+  color: #86efac;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.cg-play-all-btn:hover { background: rgba(34,197,94,0.15); }
 .cg-stop-all-btn {
   background: rgba(239,68,68,0.08);
   border: 1px solid rgba(239,68,68,0.2);
@@ -1062,7 +1082,6 @@ input[type="range"]::-moz-range-thumb {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   transition: all 0.15s;
 }
 .cg-stop-all-btn:hover { background: rgba(239,68,68,0.15); }

@@ -138,6 +138,65 @@ function stopChaseGroupById(chaseGroupId) {
   restoreLightStates(chaseGroupId);
 }
 
+// PUT /api/chase-groups/stop-all — Stop everything (must be before /:id routes)
+router.put('/stop-all', async (req, res) => {
+  const cgs = readChaseGroups();
+  for (const cg of cgs) {
+    for (const member of cg.members) {
+      if (member.type === 'sequence') stopGroupChase(member.id);
+      else if (member.type === 'strip') stopChase(member.id);
+      activeMembership.delete(member.id);
+    }
+    await restoreLightStates(cg.id);
+  }
+  res.json({ success: true });
+});
+
+// PUT /api/chase-groups/play-all — Start all chase groups
+router.put('/play-all', async (req, res) => {
+  const cgs = readChaseGroups();
+  const seqs = readSequences();
+  const errors = [];
+
+  for (const cg of cgs) {
+    // Skip if already running
+    const alreadyRunning = cg.members.every(m => {
+      if (m.type === 'sequence') return isGroupChaseRunning(m.id);
+      if (m.type === 'strip') return isStripChaseRunning(m.id);
+      return false;
+    });
+    if (alreadyRunning) continue;
+
+    const speed = cg.speed || 1000;
+    const bgColor = cg.bgColor || '#800080';
+    const headColor = cg.headColor || '#0000ff';
+
+    // Snapshot light states
+    const lightIds = getChaseGroupLightIds(cg);
+    await snapshotLightStates(cg.id, lightIds);
+
+    for (const member of cg.members) {
+      try {
+        if (member.type === 'sequence') {
+          const seq = seqs.find(s => s.id === member.id);
+          if (seq) {
+            stopGroupChase(seq.id);
+            startGroupChase(seq.id, seq.lightIds, speed, bgColor, headColor);
+          }
+        } else if (member.type === 'strip') {
+          stopChase(member.id);
+          await startChase(member.id, speed, bgColor, headColor);
+        }
+        activeMembership.set(member.id, cg.id);
+      } catch (err) {
+        errors.push(`${member.id}: ${err.message}`);
+      }
+    }
+  }
+
+  res.json({ success: true, ...(errors.length && { warnings: errors }) });
+});
+
 // GET /api/chase-groups
 router.get('/', (req, res) => {
   const cgs = readChaseGroups();
@@ -338,20 +397,6 @@ router.put('/:id/colors', (req, res) => {
     }
   }
 
-  res.json({ success: true });
-});
-
-// PUT /api/chase-groups/stop-all — Stop everything
-router.put('/stop-all', async (req, res) => {
-  const cgs = readChaseGroups();
-  for (const cg of cgs) {
-    for (const member of cg.members) {
-      if (member.type === 'sequence') stopGroupChase(member.id);
-      else if (member.type === 'strip') stopChase(member.id);
-      activeMembership.delete(member.id);
-    }
-    await restoreLightStates(cg.id);
-  }
   res.json({ success: true });
 });
 

@@ -75,6 +75,19 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, onRefresh }) {
     }
   };
 
+  const playAll = async () => {
+    try {
+      await fetch('/api/chase-groups/play-all', { method: 'PUT' });
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to play all:', err);
+    }
+  };
+
+  const allRunning = chaseGroups.length > 0 && chaseGroups.every(cg => cg.running);
+  const allStopped = chaseGroups.length === 0 || chaseGroups.every(cg => !cg.running);
+  const mixed = !allRunning && !allStopped;
+
   return (
     <div className="cg-tab">
       {/* Header bar */}
@@ -83,9 +96,18 @@ function ChaseGroupsTab({ chaseGroups, sequences, rooms, onRefresh }) {
           <i className={`fas ${creating ? 'fa-times' : 'fa-plus'}`}></i>
           {creating ? ' Cancel' : ' New Chase Group'}
         </button>
-        <button className="cg-stop-all-btn" onClick={stopAll} title="Stop all chase groups">
-          <i className="fas fa-stop"></i> Stop All
-        </button>
+        <div className="cg-bulk-controls">
+          {(allStopped || mixed) && chaseGroups.length > 0 && (
+            <button className="cg-play-all-btn" onClick={playAll} title="Play all chase groups">
+              <i className="fas fa-play"></i> Play All
+            </button>
+          )}
+          {(allRunning || mixed) && (
+            <button className="cg-stop-all-btn" onClick={stopAll} title="Stop all chase groups">
+              <i className="fas fa-stop"></i> Stop All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Create form */}

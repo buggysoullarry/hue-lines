@@ -237,13 +237,13 @@ A small SwiftUI macOS app that lives in the menu bar (top-right of screen, next 
 
 - [ ] **Create Siri Shortcuts manually** on iPhone/Mac:
   - New Shortcut → "Get Contents of URL"
-  - URL: `http://mac-mini.local:3000/api/chase-groups/CHASE_GROUP_ID/play`
+  - URL: `http://huechaser.duckdns.org/api/chase-groups/CHASE_GROUP_ID/play`
   - Method: PUT
   - Name the shortcut "Office Blue" (or whatever the chase group is called)
   - Now "Hey Siri, Office Blue" triggers it
 - [ ] **Create a "Stop All" shortcut** — same pattern, hits `/api/chase-groups/stop-all`
 - [ ] **Document the setup** — Step-by-step with screenshots
-- [ ] **Limitation:** Must be on the same network as the Mac Mini (or use a tunnel)
+- [ ] Works from anywhere via `huechaser.duckdns.org`
 
 ### Option B: Homebridge Plugin (deeper Apple integration)
 
@@ -313,7 +313,19 @@ A small SwiftUI macOS app that lives in the menu bar (top-right of screen, next 
 
 ---
 
-## Phase 7: Polish & Future Ideas
+## Phase 7: SSL / HTTPS
+
+**Goal:** Secure external access with HTTPS.
+
+- [ ] **Install Caddy** on Mac Mini — single binary reverse proxy with automatic SSL
+- [ ] **Configure Caddy** to proxy `huechaser.duckdns.org` → `localhost:7483`
+- [ ] Caddy auto-obtains and renews Let's Encrypt certificates via DuckDNS DNS challenge
+- [ ] Update Eero port forward: external 443 → Mac Mini's Caddy port
+- [ ] Access becomes `https://huechaser.duckdns.org` — no port, no browser warnings
+
+---
+
+## Phase 8: Polish & Future Ideas
 
 **Goal:** Nice-to-haves once everything is running solid.
 
@@ -338,13 +350,21 @@ A small SwiftUI macOS app that lives in the menu bar (top-right of screen, next 
 | Phase | What | Depends On | Effort |
 |-------|------|------------|--------|
 | ~~1. UI + Chase Groups~~ | ~~Redesign UI, chase sequences, chase groups~~ | ~~Nothing~~ | ~~Done~~ |
-| 2. Hardening | .env, error recovery, logging, health check | Nothing | Small |
-| 3. Deployment | Git + launchd on Mac Mini | Phase 2 | Medium |
-| 4. Menu Bar | SwiftUI menu bar app | Phase 3 | Medium |
-| 5. Voice | Siri Shortcuts + Homebridge | Phase 3 | Small-Medium |
-| 6. Scheduling | Auto start/stop chase groups by time | Phase 3 | Small |
-| 7. Polish | More animations, transitions | Everything | Ongoing |
+| ~~2. Hardening~~ | ~~Error recovery, logging, health check, cleanup~~ | ~~Nothing~~ | ~~Done~~ |
+| ~~3. Deployment~~ | ~~Git + launchd + poll deploy + DuckDNS on Mac Mini~~ | ~~Phase 2~~ | ~~Done~~ |
+| 4. Menu Bar | SwiftUI menu bar app | Done | Medium |
+| 5. Voice | Siri Shortcuts + Homebridge | Done | Small-Medium |
+| 6. Scheduling | Auto start/stop chase groups by time | Done | Small |
+| 7. SSL | Let's Encrypt via Caddy for huechaser.duckdns.org | Done | Small |
+| 8. Polish | More animations, transitions | Everything | Ongoing |
 
-**Next up:** 2 → 3 → 4 → 5 → 6 → 7
+**Next up:** 4 → 5 → 6 → 7 → 8
 
-Phase 2 (hardening) is quick prep work to make the app production-ready. Phase 3 (deployment) gets it running on the Mac Mini. Everything after that builds on the deployed service.
+### Deployment Details (Completed)
+- **Mac Mini**: `plex@192.168.0.50` (hostname: `mac-mini` via /etc/hosts on iMac)
+- **Server**: Runs on port 7483 via launchd (`com.hue-lines.server`)
+- **Auto-deploy**: Poll script checks GitHub every 60s (`com.hue-lines.poll`)
+- **DuckDNS**: `huechaser.duckdns.org` → public IP, updated every 5 min (`com.hue-lines.duckdns`)
+- **Port forward**: Eero forwards external port 80 → `192.168.0.50:7483`
+- **Local access**: `http://mac-mini:7483` or `http://192.168.0.50:7483`
+- **External access**: `http://huechaser.duckdns.org`
