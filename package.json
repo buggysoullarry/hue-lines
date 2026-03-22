@@ -13,11 +13,11 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@lox-audioserver/node-airplay-sender": "^0.4.7",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
-    "node-airtunes2": "^2.5.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   }
