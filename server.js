@@ -207,10 +207,8 @@ app.listen(PORT, () => {
     if (!status.playing) return;
 
     const currentVol = status.volume;
-    // Each step adjusts volume by ~2%, scale by steps for faster turning
-    const delta = rotaryEvent.direction === 'clock_wise'
-      ? Math.max(2, rotaryEvent.steps)
-      : -Math.max(2, rotaryEvent.steps);
+    // Fixed 1% change per event — the bridge fires events rapidly enough
+    const delta = rotaryEvent.direction === 'clock_wise' ? 1 : -1;
     const newVol = Math.min(100, Math.max(0, currentVol + delta));
 
     if (newVol !== currentVol) {
