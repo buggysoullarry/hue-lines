@@ -207,13 +207,12 @@ app.listen(PORT, () => {
     if (!status.playing) return;
 
     const currentVol = status.volume;
-    // Fixed 1% change per event — the bridge fires events rapidly enough
-    const delta = rotaryEvent.direction === 'clock_wise' ? 1 : -1;
+    // ~3% per event — middle ground between too jumpy and too sluggish
+    const delta = rotaryEvent.direction === 'clock_wise' ? 3 : -3;
     const newVol = Math.min(100, Math.max(0, currentVol + delta));
 
     if (newVol !== currentVol) {
       playback.setVolume(newVol);
-      log.info(`Rotary dial → volume ${newVol}%`);
     }
   });
 });
