@@ -91,10 +91,15 @@ function ChaseGroupCard({ group, playlists, buttonDevices, onDelete, onUpdate })
   // Build flat list of all buttons across devices for the dropdown
   const allButtons = [];
   (buttonDevices || []).forEach(dev => {
+    const typeLabel = dev.deviceType === 'tap_dial' ? 'Dial'
+      : dev.deviceType === 'tap_switch' ? 'Tap'
+      : dev.deviceType === 'dimmer_switch' ? 'Dimmer'
+      : 'Switch';
     (dev.buttons || []).forEach(btn => {
       allButtons.push({
         id: btn.id,
-        label: `${dev.name} — Button ${btn.controlId}`,
+        label: `${dev.name} (${typeLabel}) — Button ${btn.controlId}`,
+        deviceType: dev.deviceType,
       });
     });
   });

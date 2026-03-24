@@ -201,5 +201,21 @@ app.listen(PORT, () => {
         }
       }
     }
+  }, (rotaryEvent) => {
+    // Rotary dial controls music volume
+    const status = playback.getStatus();
+    if (!status.playing) return;
+
+    const currentVol = status.volume;
+    // Each step adjusts volume by ~2%, scale by steps for faster turning
+    const delta = rotaryEvent.direction === 'clock_wise'
+      ? Math.max(2, rotaryEvent.steps)
+      : -Math.max(2, rotaryEvent.steps);
+    const newVol = Math.min(100, Math.max(0, currentVol + delta));
+
+    if (newVol !== currentVol) {
+      playback.setVolume(newVol);
+      log.info(`Rotary dial → volume ${newVol}%`);
+    }
   });
 });
