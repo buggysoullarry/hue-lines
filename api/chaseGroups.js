@@ -82,8 +82,6 @@ function stopChaseGroupById(chaseGroupId) {
   const cg = cgs.find(g => g.id === chaseGroupId);
   if (!cg) return;
 
-  const seqs = readSequences();
-
   for (const member of cg.members) {
     if (member.type === 'sequence') {
       stopGroupChase(member.id);
@@ -92,6 +90,9 @@ function stopChaseGroupById(chaseGroupId) {
     }
     activeMembership.delete(member.id);
   }
+
+  // Clear button state so the UI stays in sync
+  setButtonState(chaseGroupId, false);
 
   // Restore states
   restoreLightStates(chaseGroupId);
@@ -175,8 +176,10 @@ router.get('/', (req, res) => {
   const seqs = readSequences();
 
   const withStatus = cgs.map(cg => {
-    // A chase group is "running" if any of its members are running
+    // A chase group is "running" only if it owns at least one active member
     const running = cg.members.some(m => {
+      const ownedByThis = activeMembership.get(m.id) === cg.id;
+      if (!ownedByThis) return false;
       if (m.type === 'sequence') return isGroupChaseRunning(m.id);
       if (m.type === 'strip') return isStripChaseRunning(m.id);
       return false;
@@ -397,5 +400,9 @@ router.put('/:id/colors', (req, res) => {
 
   res.json({ success: true });
 });
+
+// Expose activeMembership + helpers for the button handler in server.js
+router.activeMembership = activeMembership;
+router.resolveConflicts = resolveConflicts;
 
 module.exports = router;

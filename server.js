@@ -124,6 +124,7 @@ app.listen(PORT, () => {
   const { setLightOn } = require('./lib/hue');
   const playback = require('./lib/audio/playback');
   const { snapshotLightStates, restoreLightStates } = require('./lib/lightSnapshot');
+  const { activeMembership, resolveConflicts } = chaseGroupsRouter;
 
   connectEventStream(async (buttonEvent) => {
     // Find which chase group has this button assigned
@@ -149,12 +150,17 @@ app.listen(PORT, () => {
       for (const member of cg.members) {
         if (member.type === 'sequence') stopGroupChase(member.id);
         else if (member.type === 'strip') stopChase(member.id);
+        activeMembership.delete(member.id);
       }
       if (cg.playlistId) playback.stop();
       await restoreLightStates(cg.id);
     } else {
       // PLAY
       log.info(`Tap button → starting chase group "${cg.name}"`);
+
+      // Stop any conflicting chase groups that share members
+      resolveConflicts(cg.id, cg.members);
+
       setButtonState(cg.id, true);
 
       const speed = cg.speed || 1000;
@@ -200,6 +206,7 @@ app.listen(PORT, () => {
             stopChase(member.id);
             await startChase(member.id, speed, bgColor, headColor);
           }
+          activeMembership.set(member.id, cg.id);
         } catch (err) {
           log.error(`Button chase start error: ${err.message}`);
         }
