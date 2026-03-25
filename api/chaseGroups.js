@@ -10,6 +10,7 @@ const { startChase, stopChase, updateChaseSpeed, updateChaseColors, isStripChase
 const { getLightV2, setLightColor, setLightOn } = require('../lib/hue');
 const log = require('../lib/logger');
 const playback = require('../lib/audio/playback');
+const { snapshotLightStates, restoreLightStates } = require('../lib/lightSnapshot');
 
 const cgPath = path.join(__dirname, '..', 'chaseGroups.json');
 const seqPath = path.join(__dirname, '..', 'sequences.json');
@@ -21,9 +22,6 @@ function setButtonState(cgId, running) {
   state[cgId] = running;
   fs.writeFileSync(buttonStatePath, JSON.stringify(state), 'utf8');
 }
-
-// In-memory state snapshots: chaseGroupId -> { lights: { lightId: { on, color, bri } } }
-const stateSnapshots = new Map();
 
 // Track which chase group is active for each member (for conflict resolution)
 // memberId -> chaseGroupId
@@ -59,55 +57,7 @@ function getChaseGroupLightIds(chaseGroup) {
   return [...lightIds];
 }
 
-// Snapshot current light states before a chase group starts
-async function snapshotLightStates(chaseGroupId, lightIds) {
-  const states = {};
-  for (const lightId of lightIds) {
-    try {
-      const light = await getLightV2(lightId);
-      states[lightId] = {
-        on: light.on?.on,
-        brightness: light.dimming?.brightness,
-        color: light.color?.xy ? { x: light.color.xy.x, y: light.color.xy.y } : null
-      };
-    } catch (err) {
-      log.warn(`Could not snapshot light ${lightId}: ${err.message}`);
-    }
-  }
-  stateSnapshots.set(chaseGroupId, { lights: states });
-}
-
-// Restore light states after a chase group stops
-async function restoreLightStates(chaseGroupId) {
-  const snapshot = stateSnapshots.get(chaseGroupId);
-  if (!snapshot) return;
-
-  const axios = require('axios');
-  const https = require('https');
-  const { getConfig } = require('../lib/hue');
-  const config = getConfig();
-  const ip = config.hue.bridgeIp;
-  const key = config.hue.username;
-
-  for (const [lightId, state] of Object.entries(snapshot.lights)) {
-    try {
-      const body = {};
-      if (state.on !== undefined) body.on = { on: state.on };
-      if (state.brightness !== undefined) body.dimming = { brightness: state.brightness };
-      if (state.color) body.color = { xy: state.color };
-
-      await axios.put(`https://${ip}/clip/v2/resource/light/${lightId}`, body, {
-        headers: { 'hue-application-key': key },
-        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-        timeout: 5000
-      });
-    } catch (err) {
-      log.warn(`Could not restore light ${lightId}: ${err.message}`);
-    }
-  }
-
-  stateSnapshots.delete(chaseGroupId);
-}
+// snapshotLightStates and restoreLightStates are in lib/lightSnapshot.js
 
 // Stop any chase groups that conflict with the given members
 function resolveConflicts(chaseGroupId, members) {

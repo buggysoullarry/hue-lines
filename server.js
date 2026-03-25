@@ -123,6 +123,7 @@ app.listen(PORT, () => {
   const { startChase, stopChase } = require('./lib/animations/omniglowChase');
   const { setLightOn } = require('./lib/hue');
   const playback = require('./lib/audio/playback');
+  const { snapshotLightStates, restoreLightStates } = require('./lib/lightSnapshot');
 
   connectEventStream(async (buttonEvent) => {
     // Find which chase group has this button assigned
@@ -150,6 +151,7 @@ app.listen(PORT, () => {
         else if (member.type === 'strip') stopChase(member.id);
       }
       if (cg.playlistId) playback.stop();
+      await restoreLightStates(cg.id);
     } else {
       // PLAY
       log.info(`Tap button → starting chase group "${cg.name}"`);
@@ -158,6 +160,18 @@ app.listen(PORT, () => {
       const speed = cg.speed || 1000;
       const bgColor = cg.bgColor || '#800080';
       const headColor = cg.headColor || '#0000ff';
+
+      // Snapshot light states before changing anything
+      const allLightIds = [];
+      for (const member of cg.members) {
+        if (member.type === 'sequence') {
+          const seq = seqs.find(s => s.id === member.id);
+          if (seq) allLightIds.push(...seq.lightIds);
+        } else if (member.type === 'strip') {
+          allLightIds.push(member.id);
+        }
+      }
+      await snapshotLightStates(cg.id, allLightIds);
 
       // Turn on all lights first
       for (const member of cg.members) {
